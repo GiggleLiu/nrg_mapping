@@ -1,7 +1,7 @@
 '''
-Author: Giggle Leo
+Author: Jinguo Leo
 Date : 8 September 2014
-Description : physics library
+Description : physics utility library
 '''
 from numpy import *
 from scipy.linalg import *
@@ -41,6 +41,8 @@ def ode_ronge_kutta(func,y0,tlist,**kwargs):
         the starting y.
     tlist:
         a list of t.
+    \*\*kwargs:
+        additional arguments for scipy.ode.set_integrator
     '''
     y0=y0;t0=tlist[0]
     tf=ode(func)
@@ -55,23 +57,21 @@ def ode_ronge_kutta(func,y0,tlist,**kwargs):
 
 def s2vec(s):
     '''
-    Transform a spin to a 4 dimensional vector, corresponding to s0,sx,sy,sz component.
+    Transform a 2 x 2 matrix to a 4 dimensional vector, corresponding to s0,sx,sy,sz component.
 
     s: 
-        the spin.
+        the matrix.
     '''
     res=array([trace(s),trace(dot(sx,s)),trace(dot(sy,s)),trace(dot(sz,s))])/2
     return res
 
-def vec2s(n,unit=False):
+def vec2s(n):
     '''
     Transform a vector of length 3 or 4 to a pauli matrix.
 
     n: 
         a 1-D array of length 3 or 4 to specify the `direction` of spin.
     '''
-    if unit:
-        n=n/norm(n)
     if len(n)<=3:
         res=zeros([2,2],dtype='complex128')
         for i in xrange(len(n)):
@@ -84,7 +84,7 @@ def vec2s(n,unit=False):
 
 def H2G(h,w,tp='r',geta=1e-2,sigma=None):
     '''
-    Get G(k) from H(k).
+    Get Green's function g from Hamiltonian h.
 
     h: 
         an array of hamiltonian.
@@ -97,6 +97,8 @@ def H2G(h,w,tp='r',geta=1e-2,sigma=None):
         'matsu': finite temperature Green's function.
     geta:
         smearing factor. default is 1e-2.
+    sigma:
+        additional self energy.
     '''
     if tp=='r':
         z=w+1j*geta
@@ -113,7 +115,7 @@ def H2G(h,w,tp='r',geta=1e-2,sigma=None):
 
 def qr2(A):
     '''
-    analytically, get the QR decomposition of a 2 dimensional hermion matrix.
+    analytically, get the QR decomposition of a matrix.
 
     A:
         the matrix.
@@ -132,7 +134,7 @@ def qr2(A):
 
 def mpconj(A):
     '''
-    get the conjugate of matrix A
+    get the conjugate of matrix A(to avoid a bug of gmpy2.mpc.)
     
     A:
         the input matrix.

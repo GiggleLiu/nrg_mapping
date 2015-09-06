@@ -1,8 +1,10 @@
 #!/usr/bin/python
-#wrapper for chain adaption
-import os,pdb,time
+'''
+Discretize the continuous hybridization function into a discretized model(DiscModel).
+checking method is also provided.
+'''
+import pdb,time
 from numpy import *
-from numpy.linalg import norm
 from utils import ode_ronge_kutta,eigh_pauliv_npy,sx,sy,sz,s2vec,H2G
 from matplotlib.pyplot import *
 import matplotlib.cm as cm
@@ -10,18 +12,16 @@ from scipy.interpolate import interp1d
 from scipy.integrate import quadrature,cumtrapz,trapz,simps,quad
 from numpy.linalg import eigh,inv,eigvalsh
 
-DIRNAME=os.path.dirname(__file__)
-
 class DiscHandler(object):
     '''
-    Class for chain adaptor.
+    Handler for discretization of hybridization function.
 
     token:
         the token of this handler, which is a string for saving/loading data.
     Lambda:
         scaling factor.
     N:
-        the number of intervals.
+        the maximum discretization index.
     D:
         the band range, [-1,1] for default.
     z:
@@ -91,7 +91,7 @@ class DiscHandler(object):
     @property
     def unique_token(self):
         '''
-        return the representative string.
+        return a unique token, for saving/loading datas.
         '''
         return '%s_%.4f_%s'%(self.token,self.Lambda,self.N)
 
@@ -333,7 +333,7 @@ class DiscHandler(object):
         w0l=linspace(0,Gap-1e-4,20) if Gap>0 else [0]
         wlist=append(w0l,exp(linspace(log(self.Lambda**-(self.N+1)),log(D-Gap),Nw))+Gap)
         wl_sgn=sgn*wlist
-        filename='data/checkmapping_%s_%s'%(self.token,sgn)
+        filename='data/checkmapping_%s_%s'%(self.unique_token,sgn)
 
         Tlist=[Tfunc(x) for x in xlist]
         Elist=[Efunc(x) for x in xlist]
@@ -406,7 +406,7 @@ class DiscHandler(object):
             append scale datas.
         '''
         NN=200000
-        filename='data/scale-%s-%.4f-%s'%(self.token,self.Lambda,self.N)
+        filename='data/scale-%s'%(self.unique_token)
         if ndim(z)==0:
             z=array([z])
         nz=len(z)

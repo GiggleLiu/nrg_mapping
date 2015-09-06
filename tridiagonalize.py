@@ -27,9 +27,9 @@ def tridiagonalize(A, q, m=None,prec=None,getbasis=False):
     getbasis:
         return basis vectors if True.
     return:
-        tridiagonal part part of matrix.
+        (data,offset,vectorbase)
+
         Use scipy.sparse.diags(res[0],res[1]) to generate a sparse matrix 
-        [the base vectors if v is True]
     """
     if m==None:
         m=len(A)
@@ -70,8 +70,9 @@ def tridiagonalize(A, q, m=None,prec=None,getbasis=False):
 
 def tridiagonalize_qr(A,q,m=None,prec=None):
     """
-    Use m steps of the lanczos algorithm starting with q - the block QR decomposition version.
-    Note: we need to specify two column othogonal starting vectors here (q0,q1).
+    Use m steps of the lanczos algorithm starting with q - the block version with QR decomposition.
+
+    *Note: we need to specify a two-column starting vectors here (q0,q1) with q0,q1 orthogonal to each other.*
 
     A:
         a sparse symmetric matrix.
@@ -93,11 +94,6 @@ def tridiagonalize_qr(A,q,m=None,prec=None):
     else:
         cconj=conj
         cqr=lambda A:qr(A,mode='economic')
-    def sdot(A,B):
-        if issparse(A):
-            pass
-        else:
-            return A.dot(B)
     #check for othogonality of `q vector`.
     deviation=sum(abs(dot(cconj(q.T),q)-identity(n)))
     if deviation>1e-10:
@@ -108,7 +104,7 @@ def tridiagonalize_qr(A,q,m=None,prec=None):
     Ql=[zeros(q.shape),q]
     #run steps
     for i in range(m):
-        U_i=sdot(A,Ql[-1])-dot(Ql[-2],cconj(Bl[-1].T))
+        U_i=A.dot(Ql[-1])-dot(Ql[-2],cconj(Bl[-1].T))
         A_i=dot(cconj(Ql[-1].T),U_i)
         R_i=U_i-dot(Ql[-1],A_i)
         Q_i,B_i=cqr(R_i)
@@ -124,18 +120,17 @@ def tridiagonalize_qr(A,q,m=None,prec=None):
     offset = array([-1, 0, 1])
     return data,offset
 
-
-def check_tridiagonalize(H0,result):
+def check_tridiagonalize(H0,trid):
     '''
     check the quality of tridiagonalization.
 
     H0:
         the original hamiltonian.
-    result:
-        tridiagonalization result.
+    trid:
+        tridiagonalization result, a tuple of (data,offset).
     '''
     ion()
-    data,offset=result
+    data,offset=trid
     N=len(data[1])
     B=ndarray([N,N],dtype='O')
     #fill datas
@@ -144,7 +139,6 @@ def check_tridiagonalize(H0,result):
             for k in xrange(3):
                 if i-j==offset[k]:
                     B[i,j]=complex128(data[offset[k]+1][min(i,j)])
-    #B=diags(data,offset)
     B=sps.bmat(B).toarray()
     e1=eigvalsh(H0)
     e2=eigvalsh(B)
@@ -152,96 +146,3 @@ def check_tridiagonalize(H0,result):
     legend(['Original','Mapped'])
     pdb.set_trace()
 
-
-def test2():
-    N=random.randint(100)
-    N=10;n=2
-    A=random.random([N*n,N*n])
-    A=A+A*0.1j
-    A=A+A.T.conj()
-    q=random.random([N*n,n])
-    B=ndarray([N,N],dtype='O')
-    #fill datas
-    data,offset=tridiagonalize2(A,qr(q,mode='economic')[0],N)
-    for i in xrange(N):
-        for j in xrange(N):
-            for k in xrange(3):
-                if i-j==offset[k]:
-                    B[i,j]=data[offset[k]+1][min(i,j)]
-    #B=diags(data,offset)
-    B=sps.bmat(B).toarray()
-    e1=eigvals(A)
-    e2=eigvals(B)
-    print sort(e1)-sort(e2)
-    pdb.set_trace()
-
-
-def check_tridiagonalize(H0,result):
-    '''
-    check the quality of tridiagonalization.
-
-    H0:
-        the original hamiltonian.
-    result:
-        tridiagonalization result.
-    '''
-    ion()
-    data,offset=result
-    N=len(data[1])
-    B=ndarray([N,N],dtype='O')
-    #fill datas
-    for i in xrange(N):
-        for j in xrange(N):
-            for k in xrange(3):
-                if i-j==offset[k]:
-                    B[i,j]=complex128(data[offset[k]+1][min(i,j)])
-    #B=diags(data,offset)
-    B=sps.bmat(B).toarray()
-    e1=eigvalsh(H0)
-    e2=eigvalsh(B)
-    plot(sort(e1),lw=3);plot(sort(e2),lw=3)
-    legend(['Original','Mapped'])
-    pdb.set_trace()
-
-
-def test2():
-    '''test for block-tridiagonalization method: tridiagonalize_qr.'''
-    print 'Testing for block tridiagonalization.'
-    N=random.randint(100)
-    N=10;n=2
-    A=random.random([N*n,N*n])
-    A=A+A*0.1j
-    A=A+A.T.conj()
-    q=random.random([N*n,n])
-    q,r=qr2(q) #normalize q
-    q=complex128(q)
-    B=ndarray([N,N],dtype='O')
-    #fill datas
-    data,offset=tridiagonalize_qr(A,q,N)
-    for i in xrange(N):
-        for j in xrange(N):
-            for k in xrange(3):
-                if i-j==offset[k]:
-                    B[i,j]=data[offset[k]+1][min(i,j)]
-    #B=diags(data,offset)
-    B=sps.bmat(B).toarray()
-    e1=eigvals(A)
-    e2=eigvals(B)
-    print 'Difference of eigenvalues ->',sort(e1)-sort(e2)
-    pdb.set_trace()
-
-def test1():
-    print 'Testing for scalar tridiagonalization.'
-    N=random.randint(100)
-    A=random.random([N,N])
-    A=A+A.T
-    q=random.random(N)
-    data,offset=tridiagonalize(A,q,N)
-    B=diags(data,offset)
-    e1=eigvals(A)
-    e2=eigvals(B.todense())
-    print 'Difference of eigenvalues ->',sort(e1)-sort(e2)
-
-if __name__=='__main__':
-    test1()
-    test2()

@@ -1,4 +1,8 @@
 #!/usr/bin/python
+'''
+Map a discretized model into a Chain by the method of (block-)lanczos tridiagonalization.
+checking method is also provided.
+'''
 import gmpy2,pdb
 from numpy import *
 from utils import qr2,H2G,s2vec
@@ -23,7 +27,10 @@ class ChainMapper(object):
         Map discretized model to a chain model using lanczos method.
 
         model:
-            the discretized model.
+            the discretized model(DiscModel instance).
+
+        return:
+            a Chain object
         '''
         prec=self.prec
         Elist,Tlist=model.Elist,model.Tlist
@@ -64,7 +71,7 @@ class ChainMapper(object):
             the chain after mapping.
         dischandler:
             discretization handler.
-        dfunc:
+        rhofunc:
             hybridization function.
         '''
         Lambda=dischandler.Lambda
@@ -85,7 +92,6 @@ class ChainMapper(object):
             raise Exception('Error','rank of rhofunc should be 0 or 2 but get %s.'%drank)
         filename='data/checkspec%s_%s_%s'%(nz,dischandler.token,Gap[1])
         ion()
-        figure()
         print 'Recovering Spectrum ...'
         dlv=0;dle=0
         for iz in xrange(nz):
