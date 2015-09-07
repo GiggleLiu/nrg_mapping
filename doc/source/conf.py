@@ -227,7 +227,7 @@ latex_elements = {
 
 # Latex figure (float) alignment
 #'figure_align': 'htbp',
-  'classoptions': ',oneside',
+  'classoptions': ',oneside,openany',
   'babel': '\\usepackage[english]{babel}'
 }
 

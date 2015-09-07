@@ -14,9 +14,12 @@ Please install the following numerical packages for python
 
 or *Anaconda* all in one pack: https://store.continuum.io/cshop/anaconda/
 
-###To run a test,
+###To run a test
     ```
     python test.py
     ```
 
-API document is available:*doc/API.pdf*
+###Documents
+* Theoritical Fundations: **doc/paper.pdf**, **doc/SupplMater/pdf**
+* Technical Details: **doc/technical.pdf**
+* API document: **doc/API.pdf**
