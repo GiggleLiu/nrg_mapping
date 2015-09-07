@@ -1,7 +1,7 @@
 #Versatile NRG Mapping Scheme
 *Author*:  Leo
 
-*Paper*:  arxiv 
+*Paper*:  arXiv:1509.01461
 
 *Date*:  2015/09/07
 
