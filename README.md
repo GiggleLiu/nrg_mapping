@@ -1,9 +1,9 @@
 #Versatile NRG Mapping Scheme
-*Author*:  Leo
+**Author**:  *Jinguo Leo*
 
-*Paper*:  arXiv:1509.01461
+**Paper**:  arXiv:1509.01461
 
-*Date*:  2015/09/07
+**Date**:  2015/09/07
 
 ###To use this program
 Please install the following numerical packages for python
