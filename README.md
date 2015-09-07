@@ -11,6 +11,7 @@ Please install the following numerical packages for python
 * scipy
 * matplotlib
 * gmpy2
+* mpi4py(optional)
 
 or *Anaconda* all in one pack: https://store.continuum.io/cshop/anaconda/
 
