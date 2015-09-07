@@ -12,6 +12,7 @@ import gmpy2
 sx = array([[0, 1],[ 1, 0]])
 sy = array([[0, -1j],[1j, 0]])
 sz = array([[1, 0],[0, -1]])
+Gmat=array([kron(sz,sx),kron(identity(2),sy),kron(sx,sx),kron(sy,sx),kron(identity(2),sz)])
 
 ############################ FUNCTIONS ##############################
 def eigh_pauliv_npy(a0,a1,a2,a3):

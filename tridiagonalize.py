@@ -97,7 +97,7 @@ def tridiagonalize_qr(A,q,m=None,prec=None):
     #check for othogonality of `q vector`.
     deviation=sum(abs(dot(cconj(q.T),q)-identity(n)))
     if deviation>1e-10:
-        raise Exception('Error','Othogoanlity check for start vector q failed(deviation %s).'%deviation)
+        raise Exception('Error','Othogoanlity check for start vector q failed(deviation %s).'%float64(deviation))
 
     Al=[]
     Bl=[zeros([n,n])]
@@ -112,7 +112,9 @@ def tridiagonalize_qr(A,q,m=None,prec=None):
         Bl.append(B_i)
         Ql.append(Q_i)
         if sum(abs(B_i))<1e-20:
-            print 'Warning! bad krylov space!'
+            print 'Maximum krylov space(%s) reached!'%i
+            if i!=m-1:
+                print 'Unreliable results will accur!'
 
     Bl=Bl[1:m]
     BTl=[cconj(b.T) for b in Bl]

@@ -40,10 +40,11 @@ class DiscHandler(object):
         self.D=D
         self.Gap=Gap
 
-        self.nband=2
+        self.nband=None
         self.wlist=None
         self.rholist=None
         self.rholist_closed=None
+        self.rhofunc=None
 
     def __get_rhointerpolator__(self,branch,which,gapless=False):
         '''
@@ -102,8 +103,13 @@ class DiscHandler(object):
             the number of ws for rho(w).
         '''
         d0=rhofunc(0)
-        if ndim(d0)==0 or len(d0)!=2:
-            raise Exception('Sorry, this program is for 2x2 rho(w) function only.')
+        self.rhofunc=rhofunc
+        if ndim(d0)==2:
+            self.nband=len(d0)
+        else:
+            self.nband=1
+        #if ndim(d0)==0 or len(d0)!=2:
+            #raise Exception('Sorry, this program is for 2x2 rho(w) function only.')
         self.wlist=linspace(self.D[0],self.D[1],NW)
         self.rholist=array([rhofunc(w) for w in self.wlist])
         rclist=[]
@@ -179,7 +185,7 @@ class DiscHandler(object):
                 return res
         return scalefunc
 
-    def get_wxfunc(self,scalefunc,sgn,bandindex=0,N=10000):
+    def get_wxfunc_singleband(self,scalefunc,sgn,bandindex=0,N=10000):
         '''
         Get weight function w(x), which is equal to \int^e(x)_e(x+1) d(w,bandindex) dw
 
@@ -205,12 +211,12 @@ class DiscHandler(object):
         testl=linspace(1,1.003,10)
         return wxfunc
 
-    def get_efunc(self,wxfunc,sgn,bandindex=0,N=100000,rk=False):
+    def get_efunc_singleband(self,scalefunc,sgn,bandindex=0,N=100000,rk=False):
         '''
         get representative Energy function e(x) for specific band and branch -the python version.
 
-        wxfunc:
-            a function of w(x), which is equal to t(x)^2.
+        scalefunc:
+            a function of discretization points $\epsilon(x)$.
         sgn:
             the positive branch if sgn>0, else the negative one.
         bandindex:
@@ -224,7 +230,7 @@ class DiscHandler(object):
         '''
         Nmid=5
         shift=False
-        xlist=linspace(1,self.N+1,N)
+        xlist=linspace(1,self.N+2,N)
         if sgn>0:
             D=self.D[1]
             Gap=self.Gap[1]
@@ -234,95 +240,72 @@ class DiscHandler(object):
             Gap=sgn*self.Gap[0]
             wlist=linspace(Gap,D,N)
         revals_func=self.__get_rhointerpolator__(branch='P' if sgn==1 else 'N',which='evals')[bandindex]
+        revals=revals_func(wlist)
         if rk:
             #ronge_kutta approach
-            Elist=ode_ronge_kutta(func=lambda x,y:-wxfunc(x)/revals_func(y),y0=D,tlist=xlist,integrator='dop853',atol=1e-20)
+            RL=ode_ronge_kutta(func=lambda x,y:revals_func(x),y0=0,tlist=wlist,atol=1e-20)
         else:
-            #direct integrate approach
-            wxl=wxfunc(xlist)
-            WL=append([0],cumtrapz(wxfunc(xlist),xlist))
-            Wfunc=interp1d(xlist,WL)
-            #integrate over rho(w) and get the inverse function.
-            revals=revals_func(wlist)
             RL=append([0],cumtrapz(revals,wlist))
-            iRfunc=interp1d(RL[-1]-RL,wlist)
+        Rfunc=interp1d(wlist,RL)
+        iRfunc=interp1d(RL,wlist)
+        Rmax=iRfunc.x.max()
+        Rmin=iRfunc.x.min()
+        RRlist=append([0],cumtrapz(Rfunc(scalefunc(xlist)),xlist))
+        RRfunc=interp1d(xlist,RRlist)
+        def efunc(x):
+            Rmean=RRfunc(x+1)-RRfunc(x)
+            Rmean=min(Rmean,Rmax)
+            Rmean=max(Rmean,Rmin)
+            return iRfunc(Rmean)
+        return efunc
 
-            print 'Difference of W[-1] and RL[-1]:',RL[-1]-WL[-1]
-            if WL[-1]>RL[-1]:
-                raise Exception('precision error @get_efunc')
-            Elist=iRfunc(Wfunc(xlist))
-        Efunc=interp1d(xlist,Elist)
-        Emin=Elist[-1]
-        print 'Emin - %s'%Emin
-        if Emin<Gap:
-            print 'Error, E < Gap detected! Please improve the precision of Mapping!'
-            ion()
-            plot(xlist,Efunc(xlist))
-            pdb.set_trace()
-            raise Exception('Error','E < Gap detected! Please Improve the accuracy of Mapping!')
-        return Efunc
-
-    def get_Ufunc2(self,Efuncs,sgn):
-        '''
-        get the U(x) function.
-
-        Efuncs:
-            the energy functions.
-        *return*:
-            a function of matrix U(x).
-        '''
-        if self.nband!=len(Efuncs):
-            raise Exception('Wrong number of Efuncs.')
-        if self.rholist is None:
-            raise Exception('Please specify rhofunc(with DiscHandler.set_rhofunc) first!')
-        dv=array([s2vec(d).real for d in self.rholist]).real
-        dvfunc=[interp1d(self.wlist,dv[:,i]) for i in xrange(4)]
-        def Ufunc(x):
-            el=array([sgn*Efunc(x) for Efunc in Efuncs])
-            vl=array([dvfunc[i](el) for i in xrange(4)])
-            Ul=[eigh_pauliv_npy(*vl[:,i])[1] for i in xrange(self.nband)]
-            return concatenate([Ul[iband][:,iband:iband+1] for iband in xrange(self.nband)],axis=1)
-        return Ufunc
-
-    def get_Efunc2(self,Efuncs,Ufunc):
+    def get_Efunc(self,Efuncs):
         '''
         Get the Efunc for multi-band system.
 
         Efuncs:
             energy functions for individual bands.
-        Ufunc:
-            U function.
         *return*:
             a function of representative energy E(x).
         '''
-        def Efunc2(x):
+        def Efunc(x):
             E=diag([Efuncs[i](x) for i in xrange(self.nband)])
             return E
-        return Efunc2
+        return Efunc
 
-    def get_Tfunc2(self,wxfuncs,Ufunc):
+    def get_Tfunc(self,wxfuncs,efuncs):
         '''
         Get the hopping term for multi-band system.
 
         wxfuncs:
             functions of weights for individual bands, t=sqrt(w) in 1-band system and this is for multi-band.
-        Ufunc:
-            U function.
+        efuncs:
+            functions of representative energies e(x) for each band.
         *return*:
             a function of representative hopping terms T(x).
         '''
         if self.nband==1:
             raise Exception('Error','Using multi-band Tfunc for single band model.')
-        def Tfunc2(x):
-            Ux=Ufunc(x)
+        def Tfunc(x):
+            Ul=[]
+            ei_old=2.
+            for i in xrange(self.nband):
+                ei=efuncs[i](x)
+                #The degeneracy must be handled correctly!! 
+                #This step is a must(not only for performance).
+                if abs(ei_old-ei)>1e-13:
+                    Ui=eigh(self.rhofunc(ei))[1]
+                    ei_old=ei
+                Ul.append(Ui[:,i:i+1])
+            Ux=concatenate(Ul,axis=1)
             Td=concatenate([sqrt(wxfuncs[i](x))*Ux[:,i:i+1] for i in xrange(self.nband)],axis=1)
             T=Td.conj().T
             return T
-        return Tfunc2
+        return Tfunc
 
-    def check_mapping2(self,rhofunc,Efunc,Tfunc,scalefunc,sgn,Nx=1000,Nw=200,smearing=0.02):
+    def check_mapping_eval(self,rhofunc,Efunc,Tfunc,scalefunc,sgn,Nx=1000,Nw=200,smearing=0.02):
         '''
-        check the mapping quality - the multi-band Green's function version.
+        check the mapping quality by eigenvalues - the multiple-band Green's function version.
 
         rhofunc:
             the original hybridization function.
@@ -339,6 +322,7 @@ class DiscHandler(object):
         '''
         print 'Starting checking the `%s` branch of discretized model!'%('positive' if sgn==1 else 'negative')
         NN=Nx
+        nband=self.nband
         D=sgn*self.D[(1+sgn)/2]
         Gap=sgn*self.Gap[(1+sgn)/2]
         ion()
@@ -351,7 +335,59 @@ class DiscHandler(object):
         Tlist=[Tfunc(x) for x in xlist]
         Elist=[Efunc(x) for x in xlist]
         colormap=cm.rainbow(linspace(0,0.8,4))
-        colormap2=cm.rainbow(linspace(0.2,1.,4))
+        t0=time.time()
+        GL=trapz([[dot(Tlist[i].T.conj(),dot(H2G(Elist[i],w=w,geta=smearing*max(1e-16,w-Gap)),Tlist[i])) for w in wlist] for i,x in enumerate(xlist)],xlist,axis=0)
+        print time.time()-t0
+        AL=1j*(GL-transpose(GL,axes=(0,2,1)).conj())/(pi*2.)
+        AV=array([eigvalsh(A) for A in AL])
+        odatas=array([eigvalsh(rhofunc(sgn*w)) for w in wlist])
+        savetxt(filename+'.dat',concatenate([wl_sgn[:,newaxis],odatas,AV],axis=1))
+        plts=[]
+        for i in xrange(nband):
+            plts+=plot(wl_sgn,odatas[:,i],lw=3,color=colormap[i])
+        for i in xrange(nband):
+            sct=scatter(wl_sgn,AV[:,i],s=30,edgecolors=colormap[i],facecolors='none')
+            plts.append(sct)
+        legend(plts,[r'$\rho_%s$'%i for i in xrange(nband)]+[r"$\rho'_%s$"%i for i in xrange(nband)],ncol=2)
+        xlabel('$\\omega$',fontsize=16)
+        print 'Done, Press `c` to save figure and continue.'
+        pdb.set_trace()
+        savefig(filename+'.png')
+
+
+    def check_mapping_pauli(self,rhofunc,Efunc,Tfunc,scalefunc,sgn,Nx=1000,Nw=200,smearing=0.02):
+        '''
+        check the mapping quality by Pauli decomposition - the 2-band Green's function version.
+
+        rhofunc:
+            the original hybridization function.
+        Efunc/Tfunc:
+            the representative energy/hopping term as a function of x.
+        scalefunc:
+            scale function.
+        sgn:
+            the branch.
+        Nx/Nw:
+            number of samples in x(index)- and w(frequency)- space.
+        smearing:
+            smearing constant.
+        '''
+        print 'Starting checking the `%s` branch of discretized model!'%('positive' if sgn==1 else 'negative')
+        NN=Nx
+        if self.nband!=2:
+            raise Exception('function @check_mapping_pauli is designed for 2 band bath, but got %s.'%self.nband)
+        D=sgn*self.D[(1+sgn)/2]
+        Gap=sgn*self.Gap[(1+sgn)/2]
+        ion()
+        xlist=linspace(1,self.N+1,NN)
+        w0l=linspace(0,Gap-1e-4,20) if Gap>0 else [0]
+        wlist=append(w0l,exp(linspace(log(self.Lambda**-(self.N+1)),log(D-Gap),Nw))+Gap)
+        wl_sgn=sgn*wlist
+        filename='data/checkmapping_%s_%s'%(self.unique_token,sgn)
+
+        Tlist=[Tfunc(x) for x in xlist]
+        Elist=[Efunc(x) for x in xlist]
+        colormap=cm.rainbow(linspace(0,0.8,4))
         GL=trapz([[dot(Tlist[i].T.conj(),dot(H2G(Elist[i],w=w,geta=smearing*max(1e-16,w-Gap)),Tlist[i])) for w in wlist] for i,x in enumerate(xlist)],xlist,axis=0)
         AL=1j*(GL-transpose(GL,axes=(0,2,1)).conj())/(pi*2.)
         AV=array([s2vec(A) for A in AL]).real
@@ -390,18 +426,17 @@ class DiscHandler(object):
         datas=[]
         for sgn in [1,-1]:
             scalefunc=scaletick_generator(sgn=sgn)
-            wxfuncl=[];Efuncl=[]
+            wxfuncl=[];efuncl=[]
             for i in xrange(self.nband):
-                print 'Multiple Band, For the %s branch/%s band ->'%(sgn,i)
-                print 'Getting w(x) function.'
-                wxfunc=self.get_wxfunc(scalefunc=scalefunc,sgn=sgn,bandindex=i,N=NN)
-                print 'Getting E(x) function.'
-                Efunc=self.get_efunc(wxfunc,sgn=sgn,bandindex=i,N=NN)
-                wxfuncl.append(wxfunc);Efuncl.append(Efunc)
-            print 'Getting U(x)/E(x)/T(x) ...'
-            Ufunc=self.get_Ufunc2(Efuncl,sgn)
-            Efunc=self.get_Efunc2(Efuncl,Ufunc)
-            Tfunc=self.get_Tfunc2(wxfuncl,Ufunc)
+                print 'Multiple Band, For the `%s` branch/band %s ->'%('positive' if sgn>0 else 'negative',i)
+                print 'Getting w(x) function for band %s.'%i
+                wxfunc=self.get_wxfunc_singleband(scalefunc=scalefunc,sgn=sgn,bandindex=i,N=NN)
+                print 'Getting e(x) function for band %s.'%i
+                Efunc=self.get_efunc_singleband(scalefunc,sgn=sgn,bandindex=i,N=NN)
+                wxfuncl.append(wxfunc);efuncl.append(Efunc)
+            print 'Getting representative energies/hopping terms -> E(x)/T(x) ...'
+            Efunc=self.get_Efunc(efuncl)
+            Tfunc=self.get_Tfunc(wxfuncl,efuncl)
             datas.append((scalefunc,Efunc,Tfunc))
         print 'Discretization completed!'
         return datas
@@ -413,13 +448,12 @@ class DiscHandler(object):
         funcs:
             a super tuple -> (scalefunc_positve,Efunc_positive,Tfunc_positive),(scalefunc_negative,Efunc_negative,Tfunc_negative)
         z:
-            z or a list of zs.
+            twisting parameters, scalar or 1D array.
         append:
             append model informations instead of generating one.
         *return*:
             a discrentized model - DiscModel instance.
         '''
-        NN=200000
         filename='data/scale-%s'%(self.unique_token)
         if ndim(z)==0:
             z=array([z])
