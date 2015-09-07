@@ -20,6 +20,8 @@ def eigh_pauliv_npy(a0,a1,a2,a3):
 
     a0/a1/a2/a3:
         pauli components.
+    *return*:
+        (evals,evecs)
     '''
     e0=sqrt(a1**2+a2**2+a3**2)
     evals=array([a0-e0,a0+e0])
@@ -43,6 +45,8 @@ def ode_ronge_kutta(func,y0,tlist,**kwargs):
         a list of t.
     \*\*kwargs:
         additional arguments for scipy.ode.set_integrator
+    *return*:
+        return integrated array(like cumtrapz).
     '''
     y0=y0;t0=tlist[0]
     tf=ode(func)
@@ -71,6 +75,8 @@ def vec2s(n):
 
     n: 
         a 1-D array of length 3 or 4 to specify the `direction` of spin.
+    *return*:
+        2 x 2 matrix.
     '''
     if len(n)<=3:
         res=zeros([2,2],dtype='complex128')
@@ -99,6 +105,8 @@ def H2G(h,w,tp='r',geta=1e-2,sigma=None):
         smearing factor. default is 1e-2.
     sigma:
         additional self energy.
+    *return*:
+        a Green's function.
     '''
     if tp=='r':
         z=w+1j*geta
@@ -119,6 +127,8 @@ def qr2(A):
 
     A:
         the matrix.
+    *return*:
+        (Q,R), where QR=A
     '''
     ndim=A.shape[1]
     Q=zeros([A.shape[0],0])
@@ -138,6 +148,8 @@ def mpconj(A):
     
     A:
         the input matrix.
+    *return*:
+        matrix with the same dimension as A
     '''
     N1,N2=A.shape
     B=ndarray(A.shape,dtype='O')

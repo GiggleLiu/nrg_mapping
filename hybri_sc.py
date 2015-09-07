@@ -20,6 +20,8 @@ def get_hybri(Gap,Gamma,D0=1.,mu=0.,eta=1e-10):
         chemical potential.
     eta:
         the smearing factor.
+    *return*:
+        hybridization function for superconductor.
     '''
     def hybri(w):
         z=(w+1j*eta)
@@ -42,6 +44,8 @@ def get_hybri_wideband(Gap,Gamma,D=1.,mu=0.,eta=1e-10):
         chemical potential.
     eta:
         the smearing factor.
+    *return*:
+        hybridization function for superconductor with wideband approximation.
     '''
     def hybri_wideband(w):
         E=sqrt(Gap**2-mu**2-(w+1j*eta)**2)

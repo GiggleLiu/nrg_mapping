@@ -29,7 +29,7 @@ class ChainMapper(object):
         model:
             the discretized model(DiscModel instance).
 
-        return:
+        *return*:
             a Chain object
         '''
         prec=self.prec
@@ -140,9 +140,40 @@ class ChainMapper(object):
         pdb.set_trace()
         savefig(filename+'.png')
 
+def save_chain(token,chain):
+    '''
+    save a Chain instance to files.
+
+    token:
+        a string as a prefix to store datas of a chain.
+    chain:
+        a chain instance.
+    '''
+    token='data/'+token
+    tlist=concatenate([chain.t0[newaxis,...],chain.tlist],axis=0)
+    savetxt(token+'.info.dat',array(chain.elist.shape))
+    savetxt(token+'.el.dat',chain.elist.ravel().view('float64'))
+    savetxt(token+'.tl.dat',tlist.ravel().view('float64'))
+
+def load_chain(token):
+    '''
+    load a Chain instance from files.
+
+    token:
+        a string as a prefix to store datas of a chain.
+    *return*:
+        a Chain instance.
+    '''
+    token='data/'+token
+    shape=loadtxt(token+'.info.dat')
+    elist=loadtxt(token+'.el.dat').view('complex128').reshape(shape)
+    tlist=loadtxt(token+'.tl.dat').view('complex128').reshape(shape)
+    return Chain(tlist[0],elist,tlist[1:])
+
+
 class Chain(object):
     '''
-    NRG chain.
+    NRG chain class.
     
     t0:
         the coupling term of the first site and the impurity.
@@ -150,6 +181,6 @@ class Chain(object):
         a list of on-site energies and coupling terms.
     '''
     def __init__(self,t0,elist,tlist):
-        self.t0=t0
-        self.elist=elist
-        self.tlist=tlist
+        self.t0=complex128(t0)
+        self.elist=complex128(elist)
+        self.tlist=complex128(tlist)

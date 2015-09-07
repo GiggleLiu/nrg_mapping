@@ -39,7 +39,6 @@ class DiscHandler(object):
             Gap=[-Gap,Gap]
         self.D=D
         self.Gap=Gap
-        #test rhofunc and get band infomation.
 
         self.nband=2
         self.wlist=None
@@ -131,6 +130,8 @@ class DiscHandler(object):
 
         sgn:
             return the scale function for the positive branch if sgn>0, else the negative one.
+        *return*:
+            a scale function \epsilon(x).
         '''
         if sgn>0:
             shift=self.Gap[1]
@@ -156,6 +157,8 @@ class DiscHandler(object):
 
         sgn:
             return the scale function for the positive branch if sgn>0, else the negative one.
+        *return*:
+            a scale function \epsilon(x).
         '''
         if sgn>0:
             shift=self.Gap[1]
@@ -188,6 +191,8 @@ class DiscHandler(object):
             the bandindex.
         N:
             the number of samples.
+        *return*:
+            weight of hybridization function w(x) at interval \epsilon(x)~\epsilon(x+1)
         '''
         Gap=abs(self.Gap[(1+sgn)/2])
         D=abs(self.D[(1+sgn)/2])
@@ -200,9 +205,9 @@ class DiscHandler(object):
         testl=linspace(1,1.003,10)
         return wxfunc
 
-    def get_Efunc(self,wxfunc,sgn,bandindex=0,N=100000,rk=False):
+    def get_efunc(self,wxfunc,sgn,bandindex=0,N=100000,rk=False):
         '''
-        get representative Energy function E(x) -the python version.
+        get representative Energy function e(x) for specific band and branch -the python version.
 
         wxfunc:
             a function of w(x), which is equal to t(x)^2.
@@ -214,6 +219,8 @@ class DiscHandler(object):
             the number of samples for integration.
         rk:
             use Ronge-Kutta if True(in this version, it's better to set False).
+        *return*:
+            a function of representative energy e(x) for specific band and branch.
         '''
         Nmid=5
         shift=False
@@ -242,7 +249,7 @@ class DiscHandler(object):
 
             print 'Difference of W[-1] and RL[-1]:',RL[-1]-WL[-1]
             if WL[-1]>RL[-1]:
-                raise Exception('precision error @get_Efunc')
+                raise Exception('precision error @get_efunc')
             Elist=iRfunc(Wfunc(xlist))
         Efunc=interp1d(xlist,Elist)
         Emin=Elist[-1]
@@ -261,6 +268,8 @@ class DiscHandler(object):
 
         Efuncs:
             the energy functions.
+        *return*:
+            a function of matrix U(x).
         '''
         if self.nband!=len(Efuncs):
             raise Exception('Wrong number of Efuncs.')
@@ -283,6 +292,8 @@ class DiscHandler(object):
             energy functions for individual bands.
         Ufunc:
             U function.
+        *return*:
+            a function of representative energy E(x).
         '''
         def Efunc2(x):
             E=diag([Efuncs[i](x) for i in xrange(self.nband)])
@@ -297,6 +308,8 @@ class DiscHandler(object):
             functions of weights for individual bands, t=sqrt(w) in 1-band system and this is for multi-band.
         Ufunc:
             U function.
+        *return*:
+            a function of representative hopping terms T(x).
         '''
         if self.nband==1:
             raise Exception('Error','Using multi-band Tfunc for single band model.')
@@ -363,7 +376,7 @@ class DiscHandler(object):
         NN:
             the number of samples for integration over rho(w).
 
-        return:
+        *return*:
             a super tuple -> (scalefunc_positve,Efunc_positive,Tfunc_positive),(scalefunc_negative,Efunc_negative,Tfunc_negative)
         '''
         if tick_type=='log':
@@ -377,14 +390,13 @@ class DiscHandler(object):
         datas=[]
         for sgn in [1,-1]:
             scalefunc=scaletick_generator(sgn=sgn)
-            #Efunc=self.get_Efunc(sgn=sgn)
             wxfuncl=[];Efuncl=[]
             for i in xrange(self.nband):
                 print 'Multiple Band, For the %s branch/%s band ->'%(sgn,i)
                 print 'Getting w(x) function.'
                 wxfunc=self.get_wxfunc(scalefunc=scalefunc,sgn=sgn,bandindex=i,N=NN)
                 print 'Getting E(x) function.'
-                Efunc=self.get_Efunc(wxfunc,sgn=sgn,bandindex=i,N=NN)
+                Efunc=self.get_efunc(wxfunc,sgn=sgn,bandindex=i,N=NN)
                 wxfuncl.append(wxfunc);Efuncl.append(Efunc)
             print 'Getting U(x)/E(x)/T(x) ...'
             Ufunc=self.get_Ufunc2(Efuncl,sgn)
@@ -403,7 +415,9 @@ class DiscHandler(object):
         z:
             z or a list of zs.
         append:
-            append scale datas.
+            append model informations instead of generating one.
+        *return*:
+            a discrentized model - DiscModel instance.
         '''
         NN=200000
         filename='data/scale-%s'%(self.unique_token)

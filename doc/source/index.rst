@@ -17,9 +17,3 @@ contents
    hybri_sc
 
 
-Indices and tables
-==================
-
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
