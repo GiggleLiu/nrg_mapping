@@ -19,7 +19,7 @@ or *Anaconda* all in one pack: https://store.continuum.io/cshop/anaconda/
     python test.py
     ```
 
-###Documents
-* Theoritical Fundations: **doc/paper.pdf**, **doc/SupplMater/pdf**
+###Documentation
+* Theoritical Fundations: **doc/paper.pdf**, **doc/SupplMater.pdf**
 * Technical Details: **doc/technical.pdf**
 * API document: **doc/API.pdf**
