@@ -12,6 +12,58 @@ from scipy.interpolate import interp1d
 from scipy.integrate import quadrature,cumtrapz,trapz,simps,quad
 from numpy.linalg import eigh,inv,eigvalsh
 
+def get_scalefunc_log(Lambda,D,Gap,sgn):
+    '''
+    get logarithmic scale tick function.
+    \epsilon(x)=\Lambda^(2-x)
+
+    Lambda:
+        scaling factor.
+    D/Gap:
+        the bandwidth/Gap range.
+    sgn:
+        return the scale function for the positive branch if sgn>0, else the negative one.
+    *return*:
+        a scale function \epsilon(x).
+    '''
+    def scalefunc(x):
+        res=Lambda**(2-x)*(D-Gap)+Gap
+        if ndim(x)==0:
+            if x<=2:
+                return D
+            else:
+                return res
+        else:
+            res[x<=2]=D
+            return res
+    return scalefunc
+
+def get_scalefunc_sclog(Lambda,D,Gap,sgn):
+    '''
+    get logarithmic scale tick function suited for superconductor(logarithmic for normal part).
+
+    Lambda:
+        scaling factor.
+    D/Gap:
+        the bandwidth/Gap range.
+    sgn:
+        return the scale function for the positive branch if sgn>0, else the negative one.
+    *return*:
+        a scale function \epsilon(x).
+    '''
+    D2=D**2-Gap**2
+    def scalefunc(x):
+        res=sqrt(Lambda**(2-x)*D2+Gap**2)
+        if ndim(x)==0:
+            if x<=2:
+                return D
+            else:
+                return res
+        else:
+            res[x<=2]=D
+            return res
+    return scalefunc
+
 class DiscHandler(object):
     '''
     Handler for discretization of hybridization function.
@@ -41,52 +93,11 @@ class DiscHandler(object):
         self.Gap=Gap
 
         self.nband=None
-        self.wlist=None
-        self.rholist=None
-        self.rholist_closed=None
         self.rhofunc=None
-
-    def __get_rhointerpolator__(self,branch,which,gapless=False):
-        '''
-        get a function of rho(w).
-
-        branch:
-            the `P`ositive or `N`egative branch or `B`oth.
-        which:
-            `evals` -> the eigenvalues
-            `pauli` -> pauli decomposition.
-        gapless:
-            Gap closed or not.
-        '''
-        if self.rholist is None:
-            raise Exception('Please specify rhofunc(with DiscHandler.set_rhofunc) first!')
-        if gapless:
-            rholist=self.rholist_closed
-        else:
-            rholist=self.rholist
-        #get interpolator
-        zpoint=searchsorted(self.wlist,0)
-        if branch=='B':
-            wlist=self.wlist
-            rholist=rholist
-        elif branch=='P':
-            wlist=self.wlist[zpoint-1:]
-            rholist=rholist[zpoint-1:]
-        elif branch=='N':
-            wlist=-self.wlist[zpoint::-1]
-            rholist=rholist[zpoint::-1]
-        else:
-            raise Exception('Error','branch unknown %s.'%branch)
-        if self.nband==1:
-            return interp1d(wlist,rholist)
-        elif which=='pauli':
-            rhol=array([s2vec(rho) for rho in rholist]).real
-            return [interp1d(wlist,rhol[:,i]) for i in xrange(4)]
-        elif which=='evals':
-            rhol=array([eigvalsh(rho) for rho in rholist])
-            return [interp1d(wlist,rhol[:,i]) for i in xrange(self.nband)]
-        else:
-            raise Exception('Error','undefined case %s'%which)
+        self.wlist=None
+        self.rho_list=None
+        self.rhoeval_list=None
+        self.rhoeval_int_list=None     #integration over rho_list
 
     @property
     def unique_token(self):
@@ -95,11 +106,11 @@ class DiscHandler(object):
         '''
         return '%s_%.4f_%s'%(self.token,self.Lambda,self.N)
 
-    def set_rhofunc(self,rhofunc,NW=50001):
+    def set_rhofunc(self,rhofunc,Nw=50001):
         '''
         rhofunc:
             the hybridization function.
-        NW:
+        Nw:
             the number of ws for rho(w).
         '''
         d0=rhofunc(0)
@@ -108,84 +119,13 @@ class DiscHandler(object):
             self.nband=len(d0)
         else:
             self.nband=1
-        #if ndim(d0)==0 or len(d0)!=2:
-            #raise Exception('Sorry, this program is for 2x2 rho(w) function only.')
-        self.wlist=linspace(self.D[0],self.D[1],NW)
-        self.rholist=array([rhofunc(w) for w in self.wlist])
-        rclist=[]
-        for w in self.wlist:
-            if w>=0 and w<=self.D[1]:
-                Gap=self.Gap[1]
-                D=self.D[1]
-                w2=w*(D-Gap)/D+Gap
-                rc=rhofunc(w2)
-            elif w<0 and w>=self.D[0]:
-                Gap=-self.Gap[0]
-                D=-self.D[0]
-                w2=w*(D-Gap)/D-Gap
-                rc=rhofunc(w2)
-            else:
-                rc=0. if self.nband==1 else zeros([self.nband,self.nband])
-            rclist.append(rc)
-        self.rholist_closed=array(rclist)
+        #[positive,negative]
+        self.wlist=[linspace(-self.Gap[0],-self.D[0],Nw),linspace(self.Gap[1],self.D[1],Nw)]
+        self.rho_list=[array([rhofunc(w) for w in wl]) for wl in self.wlist]
+        self.rhoeval_list=[array([eigvalsh(rho) for rho in rhol]) for rhol in self.rho_list]
+        self.rhoeval_int_list=[concatenate([zeros([1,self.nband]),cumtrapz(rhoevall,self.wlist[bindex],axis=0)],axis=0) for bindex,rhoevall in enumerate(self.rhoeval_list)]
 
-    def get_scalefunc_log(self,sgn):
-        '''
-        get logarithmic scale tick function.
-        \epsilon(x)=\Lambda^(2-x)
-
-        sgn:
-            return the scale function for the positive branch if sgn>0, else the negative one.
-        *return*:
-            a scale function \epsilon(x).
-        '''
-        if sgn>0:
-            shift=self.Gap[1]
-            D=self.D[1]
-        else:
-            shift=-self.Gap[0]
-            D=-self.D[0]
-        def scalefunc(x):
-            res=self.Lambda**(2-x)*(D-shift)+shift
-            if ndim(x)==0:
-                if x<=2:
-                    return D
-                else:
-                    return res
-            else:
-                res[x<=2]=D
-                return res
-        return scalefunc
-
-    def get_scalefunc_sclog(self,sgn):
-        '''
-        get logarithmic scale tick function suited for superconductor(logarithmic for normal part).
-
-        sgn:
-            return the scale function for the positive branch if sgn>0, else the negative one.
-        *return*:
-            a scale function \epsilon(x).
-        '''
-        if sgn>0:
-            shift=self.Gap[1]
-            D=self.D[1]
-        else:
-            shift=-self.Gap[0]
-            D=-self.D[0]
-        D2=D**2-shift**2
-        def scalefunc(x):
-            res=sqrt(self.Lambda**(2-x)*D2+shift**2)
-            if ndim(x)==0:
-                if x<=2:
-                    return D
-                else:
-                    return res
-            else:
-                res[x<=2]=D
-                return res
-        return scalefunc
-
-    def get_wxfunc_singleband(self,scalefunc,sgn,bandindex=0,N=10000):
+    def get_wxfunc_singleband(self,scalefunc,sgn,bandindex=0):
         '''
         Get weight function w(x), which is equal to \int^e(x)_e(x+1) d(w,bandindex) dw
 
@@ -195,23 +135,17 @@ class DiscHandler(object):
             specify the branch.
         bandindex:
             the bandindex.
-        N:
-            the number of samples.
         *return*:
             weight of hybridization function w(x) at interval \epsilon(x)~\epsilon(x+1)
         '''
-        Gap=abs(self.Gap[(1+sgn)/2])
-        D=abs(self.D[(1+sgn)/2])
-        
-        dfunc=self.__get_rhointerpolator__(which='evals',branch='P' if sgn>0 else 'N',gapless=False)[bandindex]
-        wlist=linspace(Gap,D,N)
-        int_dfunc=append([0],cumtrapz(dfunc(wlist),wlist))
-        DF=interp1d(wlist,int_dfunc)
-        wxfunc=lambda x:DF(scalefunc(x))-DF(scalefunc(x+1))
-        testl=linspace(1,1.003,10)
+        branchindex=(1+sgn)/2
+        wlist=self.wlist[branchindex]
+        RL=self.rhoeval_int_list[branchindex][:,bandindex]
+        Rfunc=interp1d(wlist,RL)
+        wxfunc=lambda x:Rfunc(scalefunc(x))-Rfunc(scalefunc(x+1))
         return wxfunc
 
-    def get_efunc_singleband(self,scalefunc,sgn,bandindex=0,N=100000,rk=False):
+    def get_efunc_singleband(self,scalefunc,sgn,bandindex=0,Nx=500000,rk=False):
         '''
         get representative Energy function e(x) for specific band and branch -the python version.
 
@@ -221,33 +155,18 @@ class DiscHandler(object):
             the positive branch if sgn>0, else the negative one.
         bandindex:
             the band index.
-        N:
-            the number of samples for integration.
+        Nx:
+            the number of samples in x-space for integration.
         rk:
             use Ronge-Kutta if True(in this version, it's better to set False).
         *return*:
             a function of representative energy e(x) for specific band and branch.
         '''
-        Nmid=5
-        shift=False
-        xlist=linspace(1,self.N+2,N)
-        if sgn>0:
-            D=self.D[1]
-            Gap=self.Gap[1]
-            wlist=linspace(Gap,D,N)
-        else:
-            D=sgn*self.D[0]
-            Gap=sgn*self.Gap[0]
-            wlist=linspace(Gap,D,N)
-        revals_func=self.__get_rhointerpolator__(branch='P' if sgn==1 else 'N',which='evals')[bandindex]
-        revals=revals_func(wlist)
-        if rk:
-            #ronge_kutta approach
-            RL=ode_ronge_kutta(func=lambda x,y:revals_func(x),y0=0,tlist=wlist,atol=1e-20)
-        else:
-            RL=append([0],cumtrapz(revals,wlist))
-        Rfunc=interp1d(wlist,RL)
-        iRfunc=interp1d(RL,wlist)
+        xlist=linspace(1,self.N+2,Nx)
+        wlist=self.wlist[(1+sgn)/2]
+        rhoeval_int_list=self.rhoeval_int_list[(1+sgn)/2][:,bandindex]
+        Rfunc=interp1d(wlist,rhoeval_int_list)
+        iRfunc=interp1d(rhoeval_int_list,wlist)
         Rmax=iRfunc.x.max()
         Rmin=iRfunc.x.min()
         RRlist=append([0],cumtrapz(Rfunc(scalefunc(xlist)),xlist))
@@ -320,13 +239,13 @@ class DiscHandler(object):
         smearing:
             smearing constant.
         '''
-        print 'Starting checking the `%s` branch of discretized model!'%('positive' if sgn==1 else 'negative')
-        NN=Nx
+        print 'Start checking the `%s` branch of discretized model!'%('positive' if sgn==1 else 'negative')
+        Nx=Nx
         nband=self.nband
         D=sgn*self.D[(1+sgn)/2]
         Gap=sgn*self.Gap[(1+sgn)/2]
         ion()
-        xlist=linspace(1,self.N+1,NN)
+        xlist=linspace(1,self.N+1,Nx)
         w0l=linspace(0,Gap-1e-4,20) if Gap>0 else [0]
         wlist=append(w0l,exp(linspace(log(self.Lambda**-(self.N+1)),log(D-Gap),Nw))+Gap)
         wl_sgn=sgn*wlist
@@ -357,7 +276,7 @@ class DiscHandler(object):
 
     def check_mapping_pauli(self,rhofunc,Efunc,Tfunc,scalefunc,sgn,Nx=1000,Nw=200,smearing=0.02):
         '''
-        check the mapping quality by Pauli decomposition - the 2-band Green's function version.
+        check the mapping quality by Pauli decomposition - only 2-band Green's function is allowed.
 
         rhofunc:
             the original hybridization function.
@@ -373,13 +292,13 @@ class DiscHandler(object):
             smearing constant.
         '''
         print 'Starting checking the `%s` branch of discretized model!'%('positive' if sgn==1 else 'negative')
-        NN=Nx
+        Nx=Nx
         if self.nband!=2:
             raise Exception('function @check_mapping_pauli is designed for 2 band bath, but got %s.'%self.nband)
         D=sgn*self.D[(1+sgn)/2]
         Gap=sgn*self.Gap[(1+sgn)/2]
         ion()
-        xlist=linspace(1,self.N+1,NN)
+        xlist=linspace(1,self.N+1,Nx)
         w0l=linspace(0,Gap-1e-4,20) if Gap>0 else [0]
         wlist=append(w0l,exp(linspace(log(self.Lambda**-(self.N+1)),log(D-Gap),Nw))+Gap)
         wl_sgn=sgn*wlist
@@ -403,36 +322,38 @@ class DiscHandler(object):
         pdb.set_trace()
         savefig(filename+'.png')
 
-    def quick_map2(self,tick_type='log',NN=1000000):
+    def quick_map(self,tick_type='log',Nx=500000):
         '''
-        Perform quick mapping(All in one suit!) for 2 x 2 hybridization matrix.
+        Perform quick mapping(All in one suit!) for nband x nband hybridization matrix.
 
         tick_type:
             the type of tick, `log`->logarithmic tick, `sclog`->logarithmic ticks suited for superconductor.
-        NN:
-            the number of samples for integration over rho(w).
+        Nx:
+            the number of samples for integration over rho(epsilon(x)).
 
         *return*:
-            a super tuple -> (scalefunc_positve,Efunc_positive,Tfunc_positive),(scalefunc_negative,Efunc_negative,Tfunc_negative)
+            a super tuple of functions -> (scalefunc_positve,Efunc_positive,Tfunc_positive),(scalefunc_negative,Efunc_negative,Tfunc_negative)
         '''
         if tick_type=='log':
             print 'Using Logarithmic ticks.'
-            scaletick_generator=self.get_scalefunc_log
+            scaletick_generator=get_scalefunc_log
         elif tick_type=='sclog':
             print 'Using Logarithmic ticks designed for superconductor.'
-            scaletick_generator=self.get_scalefunc_sclog
+            scaletick_generator=get_scalefunc_sclog
         else:
             raise Exception('Error','Undefined tick type %s'%tick_type)
         datas=[]
         for sgn in [1,-1]:
-            scalefunc=scaletick_generator(sgn=sgn)
+            D=sgn*self.D[(1+sgn)/2]
+            Gap=sgn*self.Gap[(1+sgn)/2]
+            scalefunc=scaletick_generator(self.Lambda,D=D,Gap=Gap,sgn=sgn)
             wxfuncl=[];efuncl=[]
             for i in xrange(self.nband):
                 print 'Multiple Band, For the `%s` branch/band %s ->'%('positive' if sgn>0 else 'negative',i)
                 print 'Getting w(x) function for band %s.'%i
-                wxfunc=self.get_wxfunc_singleband(scalefunc=scalefunc,sgn=sgn,bandindex=i,N=NN)
+                wxfunc=self.get_wxfunc_singleband(scalefunc=scalefunc,sgn=sgn,bandindex=i)
                 print 'Getting e(x) function for band %s.'%i
-                Efunc=self.get_efunc_singleband(scalefunc,sgn=sgn,bandindex=i,N=NN)
+                Efunc=self.get_efunc_singleband(scalefunc,sgn=sgn,bandindex=i,Nx=Nx)
                 wxfuncl.append(wxfunc);efuncl.append(Efunc)
             print 'Getting representative energies/hopping terms -> E(x)/T(x) ...'
             Efunc=self.get_Efunc(efuncl)

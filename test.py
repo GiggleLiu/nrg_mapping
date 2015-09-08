@@ -29,6 +29,7 @@ def test_adapt(check_mapping=True,check_trid=True,which='sc'):
     check_trid:
         check and plot the hybridization after tridiagonalization if True.
     '''
+    #select test cases.
     if which=='4band':
         D=1.
         Gap=0.
@@ -43,23 +44,44 @@ def test_adapt(check_mapping=True,check_trid=True,which='sc'):
         ymin,ymax=-0.2,0.2
     else:
         raise Exception('Undefined Test Case!')
+    #DiscHandler is a handler class for discretization.
     mapper=DiscHandler(token,2.,N=25,D=D,Gap=Gap)  #token,Lambda,maximum scale index and band range,Gap.
-    mapper.set_rhofunc(rhofunc,NW=100000)    #a function of rho(w), number of ws for interpolation(for speed).
-    funcs=mapper.quick_map2(tick_type='log',NN=1000000) #tick type,number samples for integration over rho.
-    (sf,ef,tf),(snf,enf,tnf)=funcs
+
+    #set the hybridization function rho(w)
+    print 'Setting up hybridization function ...'
+    mapper.set_rhofunc(rhofunc,Nw=100000)    #a function of rho(w), number of ws for each branch.
+
+    #perform mapping and get functions of epsilon(x),E(x) and T(x) for positive and negative branches.
+    #epsilon(x) -> function of discretization mesh points.
+    #E(x)/T(x) -> function of representative energy and hopping terms.
+    funcs=mapper.quick_map(tick_type='log',Nx=1000000) #tick type,number samples for integration over x.
+    (ef,Ef,Tf),(ef_neg,Ef_neg,Tf_neg)=funcs
+
     #check for discretization.
     if check_mapping and RANK==0:
         ylim(ymin,ymax)
-        mapper.check_mapping_eval(rhofunc,ef,tf,sf,sgn=1,Nx=2000,smearing=0.01)
-        mapper.check_mapping_eval(rhofunc,enf,tnf,snf,sgn=-1,Nx=2000,smearing=0.01)
+        mapper.check_mapping_eval(rhofunc,Ef,Tf,ef,sgn=1,Nx=2000,smearing=0.01)
+        mapper.check_mapping_eval(rhofunc,Ef_neg,Tf_neg,ef_neg,sgn=-1,Nx=2000,smearing=0.01)
 
     #get a discrete model
+    #twisting parameters, here we take 50 zs for checking.
     z=linspace(0,0.98,50)+0.01
     #z=1.
+    #extract discrete set of models with output functions of quick_map, a DiscModel instance will be returned.
     disc_model=mapper.get_discrete_model(funcs,z=z,append=False)
+
+    #Chain Mapper is a handler to map the DiscModel instance to a Chain model.
     cmapper=ChainMapper(prec=2500)
     chain=cmapper.map(disc_model)
+
+    #save the chain, you can get the chain afterwards by load_chain method or import it to other programs.
+    #data saved:
+    #   data/<token>.tl.dat -> representative coupling of i-th site to the previous site(including coupling with impurity site - t0), float view for complex numbers, shape is raveled to 1 column with length: nband x nband x nz x N(chain length) x 2(complex and real).
+    #   data/<token>.el.dat -> representative energies, stored same as above.
+    #   data/<token>.info.dat -> shape information, (Chain length,nz,nband,nband)
     save_chain(token,chain)
+
+    #check for tridiagonalization
     if check_trid and RANK==0:
         figure()
         ylim(ymin,ymax)
@@ -68,4 +90,4 @@ def test_adapt(check_mapping=True,check_trid=True,which='sc'):
     pdb.set_trace()
 
 if __name__=='__main__':
-    test_adapt(False,True,which='sc')
+    test_adapt(True,True,which='4band')

@@ -11,7 +11,6 @@ from scipy.sparse import block_diag
 from scipy.linalg import eigvalsh
 from matplotlib.pyplot import *
 from matplotlib import cm
-from blockmatrix.block_matrix import Block_Matrix
 
 #MPI setting
 try:
