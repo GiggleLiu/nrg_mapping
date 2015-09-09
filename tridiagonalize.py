@@ -55,7 +55,7 @@ def tridiagonalize(A, q, m=None,prec=None,getbasis=False):
         tmp = dot(Q.T, z)
         tmp = dot(Q, tmp)
         z = z - tmp
-        beta_i = sqrt(dot(z,z))
+        beta_i = csqrt(dot(z,z))
         z=z/beta_i
 
         alpha.append(alpha_i)

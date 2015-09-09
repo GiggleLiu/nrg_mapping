@@ -92,6 +92,7 @@ class DiscHandler(object):
         self.D=D
         self.Gap=Gap
 
+        self.is_scalar=False
         self.nband=None
         self.rhofunc=None
         self.wlist=None
@@ -115,13 +116,18 @@ class DiscHandler(object):
         '''
         d0=rhofunc(0)
         self.rhofunc=rhofunc
-        if ndim(d0)==2:
+        rdim=ndim(d0)
+        if rdim==2:
+            self.is_scalar=False
             self.nband=len(d0)
-        else:
+        elif rdim==0:
+            self.is_scalar=True
             self.nband=1
+        else:
+            raise Exception('Hybridization function with Dimension %s is not supported!'%rdim)
         #[positive,negative]
         self.wlist=[linspace(-self.Gap[0],-self.D[0],Nw),linspace(self.Gap[1],self.D[1],Nw)]
-        self.rho_list=[array([rhofunc(w) for w in wl]) for wl in self.wlist]
+        self.rho_list=[array([rhofunc(w) for w in wl]).reshape([Nw,self.nband,self.nband]) for wl in self.wlist]
         self.rhoeval_list=[array([eigvalsh(rho) for rho in rhol]) for rhol in self.rho_list]
         self.rhoeval_int_list=[concatenate([zeros([1,self.nband]),cumtrapz(rhoevall,self.wlist[bindex],axis=0)],axis=0) for bindex,rhoevall in enumerate(self.rhoeval_list)]
 
@@ -203,8 +209,9 @@ class DiscHandler(object):
         *return*:
             a function of representative hopping terms T(x).
         '''
-        if self.nband==1:
-            raise Exception('Error','Using multi-band Tfunc for single band model.')
+        if self.is_scalar:
+            one=identity(1)
+            return lambda x:one*sqrt(wxfuncs[0](x))
         def Tfunc(x):
             Ul=[]
             ei_old=2.
@@ -240,6 +247,7 @@ class DiscHandler(object):
             smearing constant.
         '''
         print 'Start checking the `%s` branch of discretized model!'%('positive' if sgn==1 else 'negative')
+        t0=time.time()
         Nx=Nx
         nband=self.nband
         D=sgn*self.D[(1+sgn)/2]
@@ -254,12 +262,13 @@ class DiscHandler(object):
         Tlist=[Tfunc(x) for x in xlist]
         Elist=[Efunc(x) for x in xlist]
         colormap=cm.rainbow(linspace(0,0.8,4))
-        t0=time.time()
         GL=trapz([[dot(Tlist[i].T.conj(),dot(H2G(Elist[i],w=w,geta=smearing*max(1e-16,w-Gap)),Tlist[i])) for w in wlist] for i,x in enumerate(xlist)],xlist,axis=0)
-        print time.time()-t0
         AL=1j*(GL-transpose(GL,axes=(0,2,1)).conj())/(pi*2.)
         AV=array([eigvalsh(A) for A in AL])
-        odatas=array([eigvalsh(rhofunc(sgn*w)) for w in wlist])
+        if self.is_scalar:
+            odatas=array([rhofunc(w) for w in wl_sgn])[:,newaxis]
+        else:
+            odatas=array([eigvalsh(rhofunc(w)) for w in wl_sgn])
         savetxt(filename+'.dat',concatenate([wl_sgn[:,newaxis],odatas,AV],axis=1))
         plts=[]
         for i in xrange(nband):
@@ -269,6 +278,7 @@ class DiscHandler(object):
             plts.append(sct)
         legend(plts,[r'$\rho_%s$'%i for i in xrange(nband)]+[r"$\rho'_%s$"%i for i in xrange(nband)],ncol=2)
         xlabel('$\\omega$',fontsize=16)
+        print 'Time Elapsed: %s s'%(time.time()-t0)
         print 'Done, Press `c` to save figure and continue.'
         pdb.set_trace()
         savefig(filename+'.png')
@@ -292,6 +302,7 @@ class DiscHandler(object):
             smearing constant.
         '''
         print 'Starting checking the `%s` branch of discretized model!'%('positive' if sgn==1 else 'negative')
+        t0=time.time()
         Nx=Nx
         if self.nband!=2:
             raise Exception('function @check_mapping_pauli is designed for 2 band bath, but got %s.'%self.nband)
@@ -318,6 +329,7 @@ class DiscHandler(object):
             scatter(wl_sgn,AV[:,i],s=30,edgecolors=colormap[i],facecolors='none')
         legend(['$\\rho_0$','$\\rho_x$','$\\rho_y$','$\\rho_z$',"$\\rho^\\prime_0$","$\\rho^\\prime_x$","$\\rho^\\prime_y$","$\\rho^\\prime_z$"],ncol=2)
         xlabel('$\\omega$',fontsize=16)
+        print 'Time Elapsed: %s s'%(time.time()-t0)
         print 'Done, Press `c` to save figure and continue.'
         pdb.set_trace()
         savefig(filename+'.png')
@@ -334,6 +346,8 @@ class DiscHandler(object):
         *return*:
             a super tuple of functions -> (scalefunc_positve,Efunc_positive,Tfunc_positive),(scalefunc_negative,Efunc_negative,Tfunc_negative)
         '''
+        t0=time.time()
+        print 'Start discretization.'
         if tick_type=='log':
             print 'Using Logarithmic ticks.'
             scaletick_generator=get_scalefunc_log
@@ -359,7 +373,8 @@ class DiscHandler(object):
             Efunc=self.get_Efunc(efuncl)
             Tfunc=self.get_Tfunc(wxfuncl,efuncl)
             datas.append((scalefunc,Efunc,Tfunc))
-        print 'Discretization completed!'
+        print 'Time Elapsed: %s s'%(time.time()-t0)
+        print 'Done.'
         return datas
 
     def get_discrete_model(self,funcs,z=1.,append=False):
@@ -429,4 +444,3 @@ class DiscModel(object):
     def nband(self):
         '''number of bands.'''
         return self.Elist.shape[-1]
-

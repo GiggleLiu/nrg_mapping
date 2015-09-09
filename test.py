@@ -42,6 +42,13 @@ def test_adapt(check_mapping=True,check_trid=True,which='sc'):
         rhofunc=get_hybri_wideband(Gamma=0.5/pi,D=D,Gap=Gap)
         token='TESTSC'
         ymin,ymax=-0.2,0.2
+    elif which=='pseudogap':
+        D=1.
+        Gap=0.
+        one=1.
+        rhofunc=lambda w:one*abs(w) if abs(w)<=D else 0.*one
+        token='TEST1'
+        ymin,ymax=0.,1.
     else:
         raise Exception('Undefined Test Case!')
     #DiscHandler is a handler class for discretization.
@@ -50,6 +57,7 @@ def test_adapt(check_mapping=True,check_trid=True,which='sc'):
     #set the hybridization function rho(w)
     print 'Setting up hybridization function ...'
     mapper.set_rhofunc(rhofunc,Nw=100000)    #a function of rho(w), number of ws for each branch.
+    print 'Done.'
 
     #perform mapping and get functions of epsilon(x),E(x) and T(x) for positive and negative branches.
     #epsilon(x) -> function of discretization mesh points.
@@ -65,7 +73,7 @@ def test_adapt(check_mapping=True,check_trid=True,which='sc'):
 
     #get a discrete model
     #twisting parameters, here we take 50 zs for checking.
-    z=linspace(0,0.98,50)+0.01
+    z=linspace(0,0.98,10)+0.01
     #z=1.
     #extract discrete set of models with output functions of quick_map, a DiscModel instance will be returned.
     disc_model=mapper.get_discrete_model(funcs,z=z,append=False)
@@ -90,4 +98,5 @@ def test_adapt(check_mapping=True,check_trid=True,which='sc'):
     pdb.set_trace()
 
 if __name__=='__main__':
-    test_adapt(True,True,which='4band')
+    #4band,sc,speudogap
+    test_adapt(True,True,which='sc')

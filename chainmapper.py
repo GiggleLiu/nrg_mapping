@@ -8,7 +8,7 @@ from numpy import *
 from utils import qr2,H2G,s2vec
 from tridiagonalize import tridiagonalize_qr,tridiagonalize
 from scipy.sparse import block_diag
-from scipy.linalg import eigvalsh
+from scipy.linalg import eigvalsh,norm
 from matplotlib.pyplot import *
 from matplotlib import cm
 
@@ -53,26 +53,17 @@ class ChainMapper(object):
         for i in xrange(model.nz):
             if i/ntask==RANK:
                 ti=Tlist[:,i]  #unitary vector
-                if model.nband==1:
-                    t0=norm(ti)
-                    qq=ti/t0
-                else:
-                    ti=ti.reshape([-1,model.nband])
-                    qq,t0=qr2(ti)
+                ti=ti.reshape([-1,model.nband])
+                qq,t0=qr2(ti)
 
                 print 'Mapping to chain through lanczos tridiagonalization for z-number %s ...'%model.z[i]
                 #the m should not be greater than scale length-N, otherwise artificial `zero modes` will take place, but how does this happen?
                 eml=Elist[:,i]
-                if not model.nband>1:
-                    #single band lanczos.
-                    H=diag(eml,0)
-                    data,offset=tridiagonalize(H,q=qq,m=model.N,prec=prec)  #we need to perform N+1 recursion to get N sub-diagonal terms.
-                else:
-                    #multi-band lanczos,
-                    #dense matrix is used here for simplicity, we should use sparse matrix here for efficiency consideration,
-                    H=block_diag(eml).toarray()
-                    H=vectorize(gmpy2.mpc)(H)
-                    data,offset=tridiagonalize_qr(H,q=qq.reshape([-1,model.nband]),m=model.N,prec=prec)  #we need to perform N+1 recursion to get N sub-diagonal terms.
+                #multi-band lanczos,
+                #dense matrix is used here for simplicity, we should use sparse matrix here for efficiency consideration,
+                H=block_diag(eml).toarray()
+                H=vectorize(gmpy2.mpc)(H)
+                data,offset=tridiagonalize_qr(H,q=qq.reshape([-1,model.nband]),m=model.N,prec=prec)  #we need to perform N+1 recursion to get N sub-diagonal terms.
                 t0li.append(t0)
                 eli.append(data[1])
                 tli.append(data[2])
@@ -112,7 +103,7 @@ class ChainMapper(object):
         elist=chain.elist
         t0=chain.t0
         nz=chain.elist.shape[1]
-        nband=dischandler.nband
+        is_scalar=chain.is_scalar
         Gap=dischandler.Gap
         D=dischandler.D
         filename='data/checkspec%s_%s_%s'%(nz,dischandler.token,Gap[1])
@@ -134,25 +125,27 @@ class ChainMapper(object):
                     tH=transpose(conj(t))
                     sigma=dot(tH,dot(g0,t))
                 dl.append(1j*(sigma-sigma.T.conj())/2./pi)
-            if nband==1:
+            if is_scalar:
                 dlv=dlv+array(dl)
                 nplt=1
-            elif nband==2 and mode=='pauli':
+            elif dischandler.nband==2 and mode=='pauli':
                 dlv=dlv+array([s2vec(d) for d in dl])
                 nplt=4
             else:
                 dlv=dlv+array([eigvalsh(d) for d in dl])
-                nplt=nband
+                nplt=chain.nband
         dlv0=array([rhofunc(w) for w in wlist])
         dlv=dlv.real/nz
+        if is_scalar:
+            dlv=dlv[:,newaxis]
         colormap=cm.rainbow(linspace(0,0.8,nplt))
         if mode=='pauli':
             dlv0=array([s2vec(d) for d in dlv0]).real
-        elif nband==1:
+        elif dischandler.is_scalar:
             dlv0=dlv0[:,newaxis]
-            dlv=dlv[:,newaxis]
         else:
             dlv0=array([eigvalsh(d) for d in dlv0])
+        print dlv0.shape,dlv.shape
         savetxt(filename+'.dat',concatenate([wlist[:,newaxis],dlv0,dlv],axis=1))
         plts=[]
         for i in xrange(nplt):
@@ -164,7 +157,7 @@ class ChainMapper(object):
         if mode=='pauli':
             legend(plts[::2],[r"$\rho_0$",r"$\rho_x$",r"$\rho_y$",r"$\rho_z$",r"$\rho''_0$",r"$\rho''_x$",r"$\rho''_y$",r"$\rho''_z$"],ncol=2)
         else:
-            legend(plts[::2],[r"$\rho_%s$"%i for i in xrange(nband)]+[r"$\rho''_%s$"%i for i in xrange(nband)],ncol=2)
+            legend(plts[::2],[r"$\rho_%s$"%i for i in xrange(chain.nband)]+[r"$\rho''_%s$"%i for i in xrange(chain.nband)],ncol=2)
         xlabel(r'$\omega$',fontsize=16)
         xticks([-1,0,1],['-D',0,'D'],fontsize=16)
         print 'Check Spectrum Finished, Press `c` to Save Figure.'
@@ -215,3 +208,22 @@ class Chain(object):
         self.t0=complex128(t0)
         self.elist=complex128(elist)
         self.tlist=complex128(tlist)
+
+    @property
+    def is_scalar(self):
+        '''True if this is a model mapped from scalar hybridization function.'''
+        return ndim(self.t0)<2
+
+    @property
+    def nband(self):
+        '''number of bands.'''
+        if self.is_scalar:
+            return 1
+        else:
+            return self.tlist.shape[-1]
+
+    def to_scalar(self):
+        '''transform 1-band non-scalar model to scalar one by remove redundant dimensions.'''
+        if self.nband!=1:
+            warnings.warn('Warning! Parse multi-band model to scalar model!')
+        return Chain(self.t0[...,0,0],self.elist[...,0,0],self.tlist[...,0,0])
