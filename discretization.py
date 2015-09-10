@@ -51,9 +51,9 @@ def get_scalefunc_sclog(Lambda,D,Gap,sgn):
     *return*:
         a scale function \epsilon(x).
     '''
-    D2=D**2-Gap**2
+    D0=sqrt(D**2-Gap**2)
     def scalefunc(x):
-        res=sqrt(Lambda**(2-x)*D2+Gap**2)
+        res=sqrt((Lambda**(2-x)*D0)**2+Gap**2)
         if ndim(x)==0:
             if x<=2:
                 return D
@@ -198,7 +198,7 @@ class DiscHandler(object):
             return E
         return Efunc
 
-    def get_Tfunc(self,wxfuncs,efuncs):
+    def get_Tfunc(self,wxfuncs,efuncs,sgn):
         '''
         Get the hopping term for multi-band system.
 
@@ -220,7 +220,7 @@ class DiscHandler(object):
                 #The degeneracy must be handled correctly!! 
                 #This step is a must(not only for performance).
                 if abs(ei_old-ei)>1e-13:
-                    Ui=eigh(self.rhofunc(ei))[1]
+                    Ui=eigh(self.rhofunc(sgn*ei))[1]
                     ei_old=ei
                 Ul.append(Ui[:,i:i+1])
             Ux=concatenate(Ul,axis=1)
@@ -371,7 +371,7 @@ class DiscHandler(object):
                 wxfuncl.append(wxfunc);efuncl.append(Efunc)
             print 'Getting representative energies/hopping terms -> E(x)/T(x) ...'
             Efunc=self.get_Efunc(efuncl)
-            Tfunc=self.get_Tfunc(wxfuncl,efuncl)
+            Tfunc=self.get_Tfunc(wxfuncl,efuncl,sgn=sgn)
             datas.append((scalefunc,Efunc,Tfunc))
         print 'Time Elapsed: %s s'%(time.time()-t0)
         print 'Done.'

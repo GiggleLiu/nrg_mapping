@@ -73,7 +73,7 @@ def test_adapt(check_mapping=True,check_trid=True,which='sc'):
 
     #get a discrete model
     #twisting parameters, here we take 50 zs for checking.
-    z=linspace(0,0.98,10)+0.01
+    z=linspace(0,0.98,50)+0.01
     #z=1.
     #extract discrete set of models with output functions of quick_map, a DiscModel instance will be returned.
     disc_model=mapper.get_discrete_model(funcs,z=z,append=False)
@@ -81,6 +81,7 @@ def test_adapt(check_mapping=True,check_trid=True,which='sc'):
     #Chain Mapper is a handler to map the DiscModel instance to a Chain model.
     cmapper=ChainMapper(prec=2500)
     chain=cmapper.map(disc_model)
+    pdb.set_trace()
 
     #save the chain, you can get the chain afterwards by load_chain method or import it to other programs.
     #data saved:
@@ -93,7 +94,7 @@ def test_adapt(check_mapping=True,check_trid=True,which='sc'):
     if check_trid and RANK==0:
         figure()
         ylim(ymin,ymax)
-        cmapper.check_spec(chain,mapper,rhofunc)
+        cmapper.check_spec(chain,mapper,rhofunc,mode='pauli')
     print 'TEST OVER! PRESS `c` TO END PROGRAM.'
     pdb.set_trace()
 
