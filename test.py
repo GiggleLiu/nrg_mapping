@@ -2,11 +2,12 @@
 '''
 A test for versatile mapping scheme!
 '''
-import pdb,time
+import pdb,time,sys
 from discretization import *
 from chainmapper import ChainMapper,save_chain,load_chain
 from hybri_sc import get_hybri_wideband,get_hybri
 from utils import Gmat
+from nrg_setting import *
 
 #MPI setting
 try:
@@ -20,7 +21,7 @@ except:
     RANK=0
 
 
-def test_adapt(check_mapping=True,check_trid=True,which='sc'):
+def test_adapt(check_mapping=True,check_trid=True,which='sc',nz=50):
     '''
     Test for mapping 2x2 rho function to discretized model.
 
@@ -28,6 +29,8 @@ def test_adapt(check_mapping=True,check_trid=True,which='sc'):
         check and plot the hybridization after discretization if True.
     check_trid:
         check and plot the hybridization after tridiagonalization if True.
+    nz:
+        number of z for averaging.
     '''
     #select test cases.
     if which=='4band':
@@ -56,32 +59,31 @@ def test_adapt(check_mapping=True,check_trid=True,which='sc'):
 
     #set the hybridization function rho(w)
     print 'Setting up hybridization function ...'
-    mapper.set_rhofunc(rhofunc,Nw=100000)    #a function of rho(w), number of ws for each branch.
+    mapper.set_rhofunc(rhofunc,Nw=NW)    #a function of rho(w), number of ws for each branch.
     print 'Done.'
 
     #perform mapping and get functions of epsilon(x),E(x) and T(x) for positive and negative branches.
     #epsilon(x) -> function of discretization mesh points.
     #E(x)/T(x) -> function of representative energy and hopping terms.
-    funcs=mapper.quick_map(tick_type='log',Nx=1000000) #tick type,number samples for integration over x.
+    funcs=mapper.quick_map(tick_type='log',Nx=NX) #tick type,number samples for integration over x.
     (ef,Ef,Tf),(ef_neg,Ef_neg,Tf_neg)=funcs
 
     #check for discretization.
     if check_mapping and RANK==0:
         ylim(ymin,ymax)
-        mapper.check_mapping_eval(rhofunc,Ef,Tf,ef,sgn=1,Nx=2000,smearing=0.01)
-        mapper.check_mapping_eval(rhofunc,Ef_neg,Tf_neg,ef_neg,sgn=-1,Nx=2000,smearing=0.01)
+        mapper.check_mapping_eval(rhofunc,Ef,Tf,ef,sgn=1,Nx=NX_CHECK_DISC,smearing=SMEARING_CHECK_DISC,Nw=NW_CHECK_DISC)
+        mapper.check_mapping_eval(rhofunc,Ef_neg,Tf_neg,ef_neg,sgn=-1,Nx=NX_CHECK_DISC,smearing=SMEARING_CHECK_DISC,Nw=NW_CHECK_DISC)
 
     #get a discrete model
     #twisting parameters, here we take 50 zs for checking.
-    z=linspace(0,0.98,50)+0.01
+    z=linspace(1./nz/2,1-1./nz/2,nz)
     #z=1.
     #extract discrete set of models with output functions of quick_map, a DiscModel instance will be returned.
     disc_model=mapper.get_discrete_model(funcs,z=z,append=False)
 
     #Chain Mapper is a handler to map the DiscModel instance to a Chain model.
-    cmapper=ChainMapper(prec=2500)
+    cmapper=ChainMapper(prec=PRECISION)
     chain=cmapper.map(disc_model)
-    pdb.set_trace()
 
     #save the chain, you can get the chain afterwards by load_chain method or import it to other programs.
     #data saved:
@@ -94,10 +96,31 @@ def test_adapt(check_mapping=True,check_trid=True,which='sc'):
     if check_trid and RANK==0:
         figure()
         ylim(ymin,ymax)
-        cmapper.check_spec(chain,mapper,rhofunc,mode='pauli')
+        cmapper.check_spec(chain,mapper,rhofunc,mode='eval',Nw=NW_CHECK_CHAIN,smearing=SMEARING_CHECK_CHAIN)
     print 'TEST OVER! PRESS `c` TO END PROGRAM.'
     pdb.set_trace()
 
 if __name__=='__main__':
-    #4band,sc,speudogap
-    test_adapt(True,True,which='sc')
+    cases=['pseudogap','sc','4band']
+    unvalid=True
+    hintstr='''
+Welcome to versatile mapping scheme for NRG, Please select a TEST CASE(Ctrl+D to quit):
+    1. Traditional SpeudoGap Model(1 band).
+    2. S-wave Superconducting Model(2 band).
+    3. An artificial 4-band model.
+    Choice(1/2/3):'''
+    unvalid=True
+    while unvalid:
+        try:
+            n=int(raw_input(hintstr))
+        except EOFError:
+            print 'Quiting'
+            sys.exit()
+        except:
+            print 'Unvalid String, input again!'
+            continue
+        if n>=1 and n<=3:
+            unvalid=False
+        else:
+            print 'Choice out of range, input again!'
+    test_adapt(True,True,which=cases[n-1],nz=50)

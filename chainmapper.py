@@ -82,7 +82,7 @@ class ChainMapper(object):
             t0l=t0li;tl=tli;el=eli
         return Chain(complex128(t0l),complex128(swapaxes(el,0,1)),complex128(swapaxes(tl,0,1)))
 
-    def check_spec(self,chain,dischandler,rhofunc,mode='eval',Nw=500):
+    def check_spec(self,chain,dischandler,rhofunc,mode='eval',Nw=500,smearing=1.5):
         '''
         check mapping quality.
 
@@ -121,7 +121,7 @@ class ChainMapper(object):
             for w in wlist:
                 sigma=0
                 for e,t in zip(el[::-1],tl[::-1]):
-                    g0=H2G(w=w,h=e+sigma,geta=1.5/nz*(max(w-Gap[1] if w>0 else Gap[0]-w,1e-2)))
+                    g0=H2G(w=w,h=e+sigma,geta=smearing/nz*(max(w-Gap[1] if w>0 else Gap[0]-w,1e-2)))
                     tH=transpose(conj(t))
                     sigma=dot(tH,dot(g0,t))
                 dl.append(1j*(sigma-sigma.T.conj())/2./pi)
