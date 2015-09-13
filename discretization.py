@@ -127,7 +127,7 @@ class DiscHandler(object):
             raise Exception('Hybridization function with Dimension %s is not supported!'%rdim)
         #[positive,negative]
         self.wlist=[linspace(-self.Gap[0],-self.D[0],Nw),linspace(self.Gap[1],self.D[1],Nw)]
-        self.rho_list=[array([rhofunc(w) for w in wl]).reshape([Nw,self.nband,self.nband]) for wl in self.wlist]
+        self.rho_list=[array([rhofunc(w) for w in sgn*wl]).reshape([Nw,self.nband,self.nband]) for sgn,wl in zip([-1,1],self.wlist)]
         self.rhoeval_list=[array([eigvalsh(rho) for rho in rhol]) for rhol in self.rho_list]
         self.rhoeval_int_list=[concatenate([zeros([1,self.nband]),cumtrapz(rhoevall,self.wlist[bindex],axis=0)],axis=0) for bindex,rhoevall in enumerate(self.rhoeval_list)]
 

@@ -42,7 +42,8 @@ def test_adapt(check_mapping=True,check_trid=True,which='sc',nz=50):
     elif which=='sc':
         D=1.
         Gap=0.1
-        rhofunc=get_hybri_wideband(Gamma=0.5/pi,D=D,Gap=Gap)
+        rhofunc0=get_hybri_wideband(Gamma=0.5/pi,D=D,Gap=Gap)
+        rhofunc=lambda w:rhofunc0(w)+(0.03*(w-2*Gap) if w>2*Gap else 0)*sz
         token='TESTSC'
         ymin,ymax=-0.2,0.2
     elif which=='pseudogap':
