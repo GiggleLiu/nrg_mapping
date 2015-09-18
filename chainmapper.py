@@ -108,7 +108,6 @@ class ChainMapper(object):
         Gap=dischandler.Gap
         D=dischandler.D
         filename=DATA_FOLDER+'checkspec%s_%s_%s'%(nz,dischandler.token,Gap[1])
-        ion()
         print 'Recovering Spectrum ...'
         dlv=0;dle=0
         for iz in xrange(nz):
@@ -139,6 +138,7 @@ class ChainMapper(object):
         dlv=dlv.real/nz
         if is_scalar:
             dlv=dlv[:,newaxis]
+        ion()
         colormap=cm.rainbow(linspace(0,0.8,nplt))
         if mode=='pauli':
             dlv0=array([s2vec(d) for d in dlv0]).real

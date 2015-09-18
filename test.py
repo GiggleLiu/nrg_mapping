@@ -74,8 +74,12 @@ def test_adapt(check_mapping=True,check_trid=True,which='sc',nz=50):
     #check for discretization.
     if check_mapping and RANK==0:
         ylim(ymin,ymax)
-        mapper.check_mapping_eval(rhofunc,Ef,Tf,ef,sgn=1,Nx=NX_CHECK_DISC,smearing=SMEARING_CHECK_DISC,Nw=NW_CHECK_DISC)
-        mapper.check_mapping_eval(rhofunc,Ef_neg,Tf_neg,ef_neg,sgn=-1,Nx=NX_CHECK_DISC,smearing=SMEARING_CHECK_DISC,Nw=NW_CHECK_DISC)
+        if check_scheme=='eval':
+            mapper.check_mapping_eval(rhofunc,Ef,Tf,ef,sgn=1,Nx=NX_CHECK_DISC,smearing=SMEARING_CHECK_DISC,Nw=NW_CHECK_DISC)
+            mapper.check_mapping_eval(rhofunc,Ef_neg,Tf_neg,ef_neg,sgn=-1,Nx=NX_CHECK_DISC,smearing=SMEARING_CHECK_DISC,Nw=NW_CHECK_DISC)
+        else:
+            mapper.check_mapping_pauli(rhofunc,Ef,Tf,ef,sgn=1,Nx=NX_CHECK_DISC,smearing=SMEARING_CHECK_DISC,Nw=NW_CHECK_DISC)
+            mapper.check_mapping_pauli(rhofunc,Ef_neg,Tf_neg,ef_neg,sgn=-1,Nx=NX_CHECK_DISC,smearing=SMEARING_CHECK_DISC,Nw=NW_CHECK_DISC)
 
     #get a discrete model
     #twisting parameters, here we take 50 zs for checking.
@@ -99,7 +103,7 @@ def test_adapt(check_mapping=True,check_trid=True,which='sc',nz=50):
     if check_trid and RANK==0:
         figure()
         ylim(ymin,ymax)
-        cmapper.check_spec(chain,mapper,rhofunc,mode='eval',Nw=NW_CHECK_CHAIN,smearing=SMEARING_CHECK_CHAIN)
+        cmapper.check_spec(chain,mapper,rhofunc,mode=check_scheme,Nw=NW_CHECK_CHAIN,smearing=SMEARING_CHECK_CHAIN)
     print 'TEST OVER! PRESS `c` TO END PROGRAM.'
     pdb.set_trace()
 
