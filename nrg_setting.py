@@ -18,10 +18,13 @@ NX_CHECK_DISC=2000
 #number of ws for display
 NW_CHECK_DISC=200
 #smearing factor for checking, the larger the smoother.
-SMEARING_CHECK_DISC=0.02
+SMEARING_CHECK_DISC=0.015
 
 ############## Check for chain mapping ###############
 #number of ws for display
 NW_CHECK_CHAIN=300
 #smearing factor for checking, the larger the smoother.
-SMEARING_CHECK_CHAIN=1.5
+SMEARING_CHECK_CHAIN=1.3
+
+############## Other setting #################
+DATA_FOLDER='./'

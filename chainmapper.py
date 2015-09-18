@@ -11,6 +11,7 @@ from scipy.sparse import block_diag
 from scipy.linalg import eigvalsh,norm
 from matplotlib.pyplot import *
 from matplotlib import cm
+from nrg_setting import DATA_FOLDER
 
 #MPI setting
 try:
@@ -106,7 +107,7 @@ class ChainMapper(object):
         is_scalar=chain.is_scalar
         Gap=dischandler.Gap
         D=dischandler.D
-        filename='data/checkspec%s_%s_%s'%(nz,dischandler.token,Gap[1])
+        filename=DATA_FOLDER+'checkspec%s_%s_%s'%(nz,dischandler.token,Gap[1])
         ion()
         print 'Recovering Spectrum ...'
         dlv=0;dle=0
@@ -160,7 +161,7 @@ class ChainMapper(object):
             legend(plts[::2],[r"$\rho_%s$"%i for i in xrange(chain.nband)]+[r"$\rho''_%s$"%i for i in xrange(chain.nband)],ncol=2)
         xlabel(r'$\omega$',fontsize=16)
         xticks([-1,0,1],['-D',0,'D'],fontsize=16)
-        print 'Check Spectrum Finished, Press `c` to Save Figure.'
+        print 'Check Spectrum Finished, Press `c` to Save Figure(If you do not get satisfactory checking, try modify the parameter `nrg_setting.SMEARING_CHECK_CHAIN`).'
         pdb.set_trace()
         savefig(filename+'.png')
 
@@ -173,7 +174,7 @@ def save_chain(token,chain):
     chain:
         a chain instance.
     '''
-    token='data/'+token
+    token=DATA_FOLDER+token
     tlist=concatenate([chain.t0[newaxis,...],chain.tlist],axis=0)
     savetxt(token+'.info.dat',array(chain.elist.shape))
     savetxt(token+'.el.dat',chain.elist.ravel().view('float64'))
@@ -188,7 +189,7 @@ def load_chain(token):
     *return*:
         a Chain instance.
     '''
-    token='data/'+token
+    token=DATA_FOLDER+token
     shape=loadtxt(token+'.info.dat')
     elist=loadtxt(token+'.el.dat').view('complex128').reshape(shape)
     tlist=loadtxt(token+'.tl.dat').view('complex128').reshape(shape)

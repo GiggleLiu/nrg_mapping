@@ -11,6 +11,7 @@ import matplotlib.cm as cm
 from scipy.interpolate import interp1d
 from scipy.integrate import quadrature,cumtrapz,trapz,simps,quad
 from numpy.linalg import eigh,inv,eigvalsh
+from nrg_setting import DATA_FOLDER
 
 def get_scalefunc_log(Lambda,D,Gap,sgn):
     '''
@@ -85,12 +86,18 @@ class DiscHandler(object):
         self.token=token
         self.Lambda=Lambda
         self.N=N
-        if ndim(D)==0:
-            D=[-D,D]
-        if ndim(Gap)==0:
-            Gap=[-Gap,Gap]
-        self.D=D
-        self.Gap=Gap
+        if ndim(D)==0 and D>0:
+            self.D=[-D,D]
+        elif ndim(D)==1 and D[1]>0 and D[0]<0:
+            self.D=D
+        else:
+            raise Exception('Invalid band-width parameter - D!')
+        if ndim(Gap)==0 and Gap>=0:
+            self.Gap=[-Gap,Gap]
+        elif ndim(Gap)==1 and Gap[0]<=0 and Gap[1]>=0:
+            self.Gap=Gap
+        else:
+            raise Exception('Invalid gap-range parameter - Gap!')
 
         self.is_scalar=False
         self.nband=None
@@ -129,7 +136,9 @@ class DiscHandler(object):
         self.wlist=[linspace(-self.Gap[0],-self.D[0],Nw),linspace(self.Gap[1],self.D[1],Nw)]
         self.rho_list=[array([rhofunc(w) for w in sgn*wl]).reshape([Nw,self.nband,self.nband]) for sgn,wl in zip([-1,1],self.wlist)]
         self.rhoeval_list=[array([eigvalsh(rho) for rho in rhol]) for rhol in self.rho_list]
-        self.rhoeval_int_list=[concatenate([zeros([1,self.nband]),cumtrapz(rhoevall,self.wlist[bindex],axis=0)],axis=0) for bindex,rhoevall in enumerate(self.rhoeval_list)]
+        if any(array(self.rhoeval_list)<0):
+            raise Exception('Negative eigenvalue of rho(w) found! check your hybridization function!')
+        self.rhoeval_int_list=[concatenate([zeros([1,self.nband]),cumtrapz(rhoevall,self.wlist[bindex][:,newaxis],axis=0)],axis=0) for bindex,rhoevall in enumerate(self.rhoeval_list)]
 
     def get_wxfunc_singleband(self,scalefunc,sgn,bandindex=0):
         '''
@@ -257,7 +266,7 @@ class DiscHandler(object):
         w0l=linspace(0,Gap-1e-4,20) if Gap>0 else [0]
         wlist=append(w0l,exp(linspace(log(self.Lambda**-(self.N+1)),log(D-Gap),Nw))+Gap)
         wl_sgn=sgn*wlist
-        filename='data/checkmapping_%s_%s'%(self.unique_token,sgn)
+        filename=DATA_FOLDER+'checkmapping_%s_%s'%(self.unique_token,sgn)
 
         Tlist=[Tfunc(x) for x in xlist]
         Elist=[Efunc(x) for x in xlist]
@@ -279,7 +288,7 @@ class DiscHandler(object):
         legend(plts,[r'$\rho_%s$'%i for i in xrange(nband)]+[r"$\rho'_%s$"%i for i in xrange(nband)],ncol=2)
         xlabel('$\\omega$',fontsize=16)
         print 'Time Elapsed: %s s'%(time.time()-t0)
-        print 'Done, Press `c` to save figure and continue.'
+        print 'Done, Press `c` to save figure and continue(If you do not get satisfactory checking, try modify the parameter `nrg_setting.SMEARING_CHECK_DISC`).'
         pdb.set_trace()
         savefig(filename+'.png')
 
@@ -313,7 +322,7 @@ class DiscHandler(object):
         w0l=linspace(0,Gap-1e-4,20) if Gap>0 else [0]
         wlist=append(w0l,exp(linspace(log(self.Lambda**-(self.N+1)),log(D-Gap),Nw))+Gap)
         wl_sgn=sgn*wlist
-        filename='data/checkmapping_%s_%s'%(self.unique_token,sgn)
+        filename=DATA_FOLDER+'checkmapping_%s_%s'%(self.unique_token,sgn)
 
         Tlist=[Tfunc(x) for x in xlist]
         Elist=[Efunc(x) for x in xlist]
@@ -330,7 +339,7 @@ class DiscHandler(object):
         legend(['$\\rho_0$','$\\rho_x$','$\\rho_y$','$\\rho_z$',"$\\rho^\\prime_0$","$\\rho^\\prime_x$","$\\rho^\\prime_y$","$\\rho^\\prime_z$"],ncol=2)
         xlabel('$\\omega$',fontsize=16)
         print 'Time Elapsed: %s s'%(time.time()-t0)
-        print 'Done, Press `c` to save figure and continue.'
+        print 'Done, Press `c` to save figure and continue(If you do not get satisfactory checking, try modify the parameter `nrg_setting.SMEARING_CHECK_DISC`).'
         pdb.set_trace()
         savefig(filename+'.png')
 
@@ -390,7 +399,7 @@ class DiscHandler(object):
         *return*:
             a discrentized model - DiscModel instance.
         '''
-        filename='data/scale-%s'%(self.unique_token)
+        filename=DATA_FOLDER+'scale-%s'%(self.unique_token)
         if ndim(z)==0:
             z=array([z])
         nz=len(z)

@@ -20,7 +20,6 @@ except:
     SIZE=1
     RANK=0
 
-
 def test_adapt(check_mapping=True,check_trid=True,which='sc',nz=50):
     '''
     Test for mapping 2x2 rho function to discretized model.
@@ -34,11 +33,12 @@ def test_adapt(check_mapping=True,check_trid=True,which='sc',nz=50):
     '''
     #select test cases.
     if which=='4band':
-        D=1.
-        Gap=0.
-        rhofunc=lambda w:identity(4)+0.3*w*Gmat[0]+0.3*w**2*Gmat[2]+0.1*kron(sz,sz) if abs(w)<=D else zeros([4,4])
-        token='TEST4'
-        ymin,ymax=0,2
+        D=[-1.,0.5]             #the energy window.
+        Gap=0                   #the gap range, 0. for gapless, or specifing the gap range by [gapedge_neg, gapedge_pos].
+        rhofunc=lambda w:identity(4)+0.3*w*Gmat[0]+0.3*w**2*Gmat[2]+0.1*kron(sz,sz)     #hybridization function
+        token='TEST4'           #for storing and fetching datas.
+        ymin,ymax=0,2           #the hybridization strength window.
+        check_scheme='eval'     #check the eigen values.
     elif which=='sc':
         D=1.
         Gap=0.1
@@ -46,6 +46,7 @@ def test_adapt(check_mapping=True,check_trid=True,which='sc',nz=50):
         rhofunc=lambda w:rhofunc0(w)+(0.03*(w-2*Gap) if w>2*Gap else 0)*sz
         token='TESTSC'
         ymin,ymax=-0.2,0.2
+        check_scheme='pauli'    #check for pauli components is always recommended for 2-band hybridization function.
     elif which=='pseudogap':
         D=1.
         Gap=0.
@@ -53,6 +54,7 @@ def test_adapt(check_mapping=True,check_trid=True,which='sc',nz=50):
         rhofunc=lambda w:one*abs(w) if abs(w)<=D else 0.*one
         token='TEST1'
         ymin,ymax=0.,1.
+        check_scheme='eval'
     else:
         raise Exception('Undefined Test Case!')
     #DiscHandler is a handler class for discretization.
@@ -88,9 +90,9 @@ def test_adapt(check_mapping=True,check_trid=True,which='sc',nz=50):
 
     #save the chain, you can get the chain afterwards by load_chain method or import it to other programs.
     #data saved:
-    #   data/<token>.tl.dat -> representative coupling of i-th site to the previous site(including coupling with impurity site - t0), float view for complex numbers, shape is raveled to 1 column with length: nband x nband x nz x N(chain length) x 2(complex and real).
-    #   data/<token>.el.dat -> representative energies, stored same as above.
-    #   data/<token>.info.dat -> shape information, (Chain length,nz,nband,nband)
+    #   <DATA_FOLDER>/<token>.tl.dat -> representative coupling of i-th site to the previous site(including coupling with impurity site - t0), float view for complex numbers, shape is raveled to 1 column with length: nband x nband x nz x N(chain length) x 2(complex and real).
+    #   <DATA_FOLDER>/<token>.el.dat -> representative energies, stored same as above.
+    #   <DATA_FOLDER>/<token>.info.dat -> shape information, (Chain length,nz,nband,nband)
     save_chain(token,chain)
 
     #check for tridiagonalization
