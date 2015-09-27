@@ -10,10 +10,10 @@ from matplotlib.pyplot import *
 import matplotlib.cm as cm
 from scipy.interpolate import interp1d
 from scipy.integrate import quadrature,cumtrapz,trapz,simps,quad
-from numpy.linalg import eigh,inv,eigvalsh
+from numpy.linalg import eigh,inv,eigvalsh,norm
 from nrg_setting import DATA_FOLDER
 
-def get_scalefunc_log(Lambda,D,Gap,sgn):
+def get_scalefunc_log(Lambda,D,Gap):
     '''
     get logarithmic scale tick function.
     \epsilon(x)=\Lambda^(2-x)
@@ -22,8 +22,6 @@ def get_scalefunc_log(Lambda,D,Gap,sgn):
         scaling factor.
     D/Gap:
         the bandwidth/Gap range.
-    sgn:
-        return the scale function for the positive branch if sgn>0, else the negative one.
     *return*:
         a scale function \epsilon(x).
     '''
@@ -39,7 +37,7 @@ def get_scalefunc_log(Lambda,D,Gap,sgn):
             return res
     return scalefunc
 
-def get_scalefunc_sclog(Lambda,D,Gap,sgn):
+def get_scalefunc_sclog(Lambda,D,Gap):
     '''
     get logarithmic scale tick function suited for superconductor(logarithmic for normal part).
 
@@ -47,8 +45,6 @@ def get_scalefunc_sclog(Lambda,D,Gap,sgn):
         scaling factor.
     D/Gap:
         the bandwidth/Gap range.
-    sgn:
-        return the scale function for the positive branch if sgn>0, else the negative one.
     *return*:
         a scale function \epsilon(x).
     '''
@@ -64,6 +60,35 @@ def get_scalefunc_sclog(Lambda,D,Gap,sgn):
             res[x<=2]=D
             return res
     return scalefunc
+
+def get_scalefunc_adaptive(Lambda,wlist,Rlist):
+    '''
+    get adaptive scale tick function(Ref: Comp. Phys. Comm. 180.1271), this is a numerical stable version even for **Gapped** systems.
+
+    Lambda:
+        scaleing factor.
+    wlist,Rlist:
+        RL is the integration of rho(w) over wlist.
+    *return*:
+        a scale function \epsilon(x).
+    '''
+    D=wlist[-1]
+    RD=Rlist[-1]
+    iRfunc=interp1d(Rlist,wlist)
+    def scalefunc(x):
+        if ndim(x)==0:
+            if x<=2:
+                return D
+            else:
+                return iRfunc(RD*Lambda**(2-x))
+        else:
+            res=ndarray(len(x),dtype='float64')
+            xmask=x>2
+            res[~xmask]=D
+            res[xmask]=iRfunc(RD*Lambda**(2-x[xmask]))
+            return res
+    return scalefunc
+
 
 class DiscHandler(object):
     '''
@@ -344,32 +369,43 @@ class DiscHandler(object):
         savefig(filename+'.png')
 
     def quick_map(self,tick_type='log',Nx=500000):
-        '''
+        r'''
         Perform quick mapping(All in one suit!) for nband x nband hybridization matrix.
 
         tick_type:
-            the type of tick, `log`->logarithmic tick, `sclog`->logarithmic ticks suited for superconductor.
+            the type of tick, 
+
+            * `adaptive` -> adaptive tick, 
+            * `sclog` -> logarithmic ticks suited for superconductor.
+            * `log` -> logarithmic tick, 
         Nx:
-            the number of samples for integration over rho(epsilon(x)).
+            the number of samples for integration over $\rho(\epsilon(x))$.
 
         *return*:
-            a super tuple of functions -> (scalefunc_positve,Efunc_positive,Tfunc_positive),(scalefunc_negative,Efunc_negative,Tfunc_negative)
+            a super tuple of functions-> 
+
+            (scalefunc_positve,Efunc_positive,Tfunc_positive),(scalefunc_negative,Efunc_negative,Tfunc_negative)
         '''
         t0=time.time()
         print 'Start discretization.'
         if tick_type=='log':
-            print 'Using Logarithmic ticks.'
-            scaletick_generator=get_scalefunc_log
+            print 'Using `Logarithmic` ticks.'
+            scalefuncs=[get_scalefunc_log(self.Lambda,D=-self.D[0],Gap=-self.Gap[0]),get_scalefunc_log(self.Lambda,D=self.D[1],Gap=self.Gap[1])]
         elif tick_type=='sclog':
-            print 'Using Logarithmic ticks designed for superconductor.'
-            scaletick_generator=get_scalefunc_sclog
+            print 'Using `Logarithmic ticks designed for superconductor`.'
+            scalefuncs=[get_scalefunc_sclog(self.Lambda,D=-self.D[0],Gap=-self.Gap[0]),get_scalefunc_sclog(self.Lambda,D=self.D[1],Gap=self.Gap[1])]
+        elif tick_type=='adaptive':
+            print 'Using `Adaptive` ticks.'
+            scalefuncs=[get_scalefunc_adaptive(self.Lambda,wlist=self.wlist[ib],Rlist=norm(self.rhoeval_int_list[ib],axis=1)) for ib in xrange(2)]
         else:
             raise Exception('Error','Undefined tick type %s'%tick_type)
+
         datas=[]
         for sgn in [1,-1]:
-            D=sgn*self.D[(1+sgn)/2]
-            Gap=sgn*self.Gap[(1+sgn)/2]
-            scalefunc=scaletick_generator(self.Lambda,D=D,Gap=Gap,sgn=sgn)
+            branchindex=(1+sgn)/2
+            D=sgn*self.D[branchindex]
+            Gap=sgn*self.Gap[branchindex]
+            scalefunc=scalefuncs[branchindex]
             wxfuncl=[];efuncl=[]
             for i in xrange(self.nband):
                 print 'Multiple Band, For the `%s` branch/band %s ->'%('positive' if sgn>0 else 'negative',i)
@@ -391,7 +427,9 @@ class DiscHandler(object):
         get a discrete set of models for specific zs.
 
         funcs:
-            a super tuple -> (scalefunc_positve,Efunc_positive,Tfunc_positive),(scalefunc_negative,Efunc_negative,Tfunc_negative)
+            a super tuple -> 
+            
+            (scalefunc_positve,Efunc_positive,Tfunc_positive),(scalefunc_negative,Efunc_negative,Tfunc_negative)
         z:
             twisting parameters, scalar or 1D array.
         append:

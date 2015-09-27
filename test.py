@@ -28,6 +28,8 @@ def test_adapt(check_mapping=True,check_trid=True,which='sc',nz=50):
         check and plot the hybridization after discretization if True.
     check_trid:
         check and plot the hybridization after tridiagonalization if True.
+    which:
+        the test case.
     nz:
         number of z for averaging.
     '''
@@ -68,7 +70,7 @@ def test_adapt(check_mapping=True,check_trid=True,which='sc',nz=50):
     #perform mapping and get functions of epsilon(x),E(x) and T(x) for positive and negative branches.
     #epsilon(x) -> function of discretization mesh points.
     #E(x)/T(x) -> function of representative energy and hopping terms.
-    funcs=mapper.quick_map(tick_type='log',Nx=NX) #tick type,number samples for integration over x.
+    funcs=mapper.quick_map(tick_type='adaptive',Nx=NX) #tick type(`adaptive`/`log`/`sclog`), number samples for integration over x.
     (ef,Ef,Tf),(ef_neg,Ef_neg,Tf_neg)=funcs
 
     #check for discretization.

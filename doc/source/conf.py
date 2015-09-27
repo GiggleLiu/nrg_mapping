@@ -21,7 +21,7 @@ import shlex
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 
 # This will include the necessary source files folders in the PATH to be able to generate the documentation from.
-devdir='/home/leo/pycode/mapping'
+devdir='../'
 sys.path.insert(0,devdir)
 # Sort members by type
 autodoc_member_order = 'groupwise'

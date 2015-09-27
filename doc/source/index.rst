@@ -8,7 +8,7 @@ Welcome to LegBuilder's documentation!
 contents
 
 .. toctree::
-   :maxdepth: 1
+   :maxdepth: 3
 
    discretization
    chainmapper
