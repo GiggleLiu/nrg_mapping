@@ -21,6 +21,6 @@ or *Anaconda* all in one pack: https://store.continuum.io/cshop/anaconda/
     ```
 
 ###Documentation
-* Theoritical Fundations: **doc/paper.pdf**, **doc/SupplMater.pdf**
+* Theoritical Fundations: **doc/1509.01461v2.pdf**, **doc/SupplMater.pdf**
 * Technical Details: **doc/technical.pdf**
 * API document: **doc/API.pdf**
