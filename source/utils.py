@@ -1,11 +1,14 @@
 '''
-Author: Jinguo Leo
-Date : 8 September 2014
-Description : physics utility library
+Physics utility library
 '''
+
 from numpy import *
-from scipy.linalg import *
+from scipy.linalg import eigh,norm
+from matplotlib import cm
+from matplotlib.pyplot import *
 import gmpy2
+
+__all__=['sx','sy','sz','Gmat','eigh_pauliv_npy','plot_pauli_components','mpconj','qr2','H2G','s2vec','vec2s']
 
 ############################ DEFINITIONS ##############################
 # pauli spin
@@ -33,32 +36,6 @@ def eigh_pauliv_npy(a0,a1,a2,a3):
     for i in xrange(2):
         evecs[i]=evecs[i]/norm(evecs[i])
     return evals,evecs.T
-
-def ode_ronge_kutta(func,y0,tlist,**kwargs):
-    '''
-    Integrate use Ronge Kutta method.
-
-    func:
-        the function of (x,y).
-    y0:
-        the starting y.
-    tlist:
-        a list of t.
-    \*\*kwargs:
-        additional arguments for scipy.ode.set_integrator
-    *return*:
-        return integrated array(like cumtrapz).
-    '''
-    y0=y0;t0=tlist[0]
-    tf=ode(func)
-    tf.set_integrator('dopri5',**kwargs)
-    tf.set_initial_value(y0,t0)
-    yl=[y0]
-    for t in tlist[1:]:
-        nt=t
-        tf.integrate(nt,step=nt-tf.t)
-        yl.append(tf.y)
-    return array(yl)
 
 def s2vec(s):
     '''
@@ -145,12 +122,16 @@ def qr2(A):
 
 def mpconj(A):
     '''
-    get the conjugate of matrix A(to avoid a bug of gmpy2.mpc.)
+    Get the conjugate of matrix A(to avoid a bug of gmpy2.mpc.conj).
     
+    Parameters
+    -------------------
     A:
-        the input matrix.
-    *return*:
-        matrix with the same dimension as A
+        The input matrix.
+
+    Return
+    --------------------
+    2D array of dtype `mpc`, the conjugate matrix of A
     '''
     N1,N2=A.shape
     B=ndarray(A.shape,dtype='O')
@@ -160,4 +141,39 @@ def mpconj(A):
             B[i,j]=gmpy2.mpc(data.real,-data.imag)
     return B
 
+def plot_pauli_components(x,y,method='plot',ax=None,label=r'\sigma',**kwargs):
+    '''
+    Plot data by pauli components.
 
+    Parameters
+    -------------------
+    x,y:
+        Datas.
+    ax:
+        The axis to plot, will use gca() to get one if None.
+    label:
+        The legend of plots.
+    method:
+        `plot` or `scatter`
+    kwargs:
+        The key word arguments for plot/scatter.
+    
+    Return
+    -------------------
+    A list of plot instances.
+    '''
+    if ax is None: ax=gca()
+    assert(ndim(x)==1 and ndim(y)==3 and y.shape[2]==2 and y.shape[1]==2)
+    assert(method=='plot' or method=='scatter')
+    subscripts=['0','x','y','z']
+
+    yv=array([s2vec(yi) for yi in y]).real
+    colormap=cm.rainbow(linspace(0,0.8,4))
+    plts=[]
+    for i in xrange(4):
+        if method=='plot':
+            plts+=plot(x,yv[:,i],lw=3,color=colormap[i],**kwargs)
+        else:
+            plts.append(scatter(x,yv[:,i],s=30,edgecolors=colormap[i],facecolors='none',**kwargs))
+    legend(plts,[r'$%s_%s$'%(label,sub) for sub in subscripts])
+    return plts

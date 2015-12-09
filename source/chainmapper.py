@@ -1,17 +1,18 @@
-#!/usr/bin/python
 '''
 Map a discretized model into a Chain by the method of (block-)lanczos tridiagonalization.
 checking method is also provided.
 '''
-import gmpy2,pdb
+
 from numpy import *
-from utils import qr2,H2G,s2vec
-from tridiagonalize import tridiagonalize_qr,tridiagonalize
 from scipy.sparse import block_diag
 from scipy.linalg import eigvalsh,norm
 from matplotlib.pyplot import *
 from matplotlib import cm
-from nrg_setting import DATA_FOLDER
+import gmpy2,pdb
+
+from utils import H2G,s2vec,qr2
+from tridiagonalize import tridiagonalize_qr,tridiagonalize
+from chain import Chain
 
 #MPI setting
 try:
@@ -73,9 +74,9 @@ class ChainMapper(object):
             el=COMM.gather(eli,root=0)
             tl=COMM.gather(tli,root=0)
             if RANK==0:
-                t0l=concatenate(t0l)
-                el=concatenate(el)
-                tl=concatenate(tl)
+                t0l=concatenate(t0l,axis=0)
+                el=concatenate(el,axis=0)
+                tl=concatenate(tl,axis=0)
             t0l=COMM.bcast(t0l,root=0)
             el=COMM.bcast(el,root=0)
             tl=COMM.bcast(tl,root=0)
@@ -107,7 +108,8 @@ class ChainMapper(object):
         is_scalar=chain.is_scalar
         Gap=dischandler.Gap
         D=dischandler.D
-        filename=DATA_FOLDER+'checkspec%s_%s_%s'%(nz,dischandler.token,Gap[1])
+        filename='data/checkspec%s_%s_%s'%(nz,dischandler.token,Gap[1])
+        ion()
         print 'Recovering Spectrum ...'
         dlv=0;dle=0
         for iz in xrange(nz):
@@ -138,7 +140,6 @@ class ChainMapper(object):
         dlv=dlv.real/nz
         if is_scalar:
             dlv=dlv[:,newaxis]
-        ion()
         colormap=cm.rainbow(linspace(0,0.8,nplt))
         if mode=='pauli':
             dlv0=array([s2vec(d) for d in dlv0]).real
@@ -161,70 +162,7 @@ class ChainMapper(object):
             legend(plts[::2],[r"$\rho_%s$"%i for i in xrange(chain.nband)]+[r"$\rho''_%s$"%i for i in xrange(chain.nband)],ncol=2)
         xlabel(r'$\omega$',fontsize=16)
         xticks([-1,0,1],['-D',0,'D'],fontsize=16)
-        print 'Check Spectrum Finished, Press `c` to Save Figure(If you do not get satisfactory checking, try modify the parameter `nrg_setting.SMEARING_CHECK_CHAIN`).'
+        print 'Check Spectrum Finished, Press `c` to Save Figure.'
         pdb.set_trace()
         savefig(filename+'.png')
 
-def save_chain(token,chain):
-    '''
-    save a Chain instance to files.
-
-    token:
-        a string as a prefix to store datas of a chain.
-    chain:
-        a chain instance.
-    '''
-    token=DATA_FOLDER+token
-    tlist=concatenate([chain.t0[newaxis,...],chain.tlist],axis=0)
-    savetxt(token+'.info.dat',array(chain.elist.shape))
-    savetxt(token+'.el.dat',chain.elist.ravel().view('float64'))
-    savetxt(token+'.tl.dat',tlist.ravel().view('float64'))
-
-def load_chain(token):
-    '''
-    load a Chain instance from files.
-
-    token:
-        a string as a prefix to store datas of a chain.
-    *return*:
-        a Chain instance.
-    '''
-    token=DATA_FOLDER+token
-    shape=loadtxt(token+'.info.dat')
-    elist=loadtxt(token+'.el.dat').view('complex128').reshape(shape)
-    tlist=loadtxt(token+'.tl.dat').view('complex128').reshape(shape)
-    return Chain(tlist[0],elist,tlist[1:])
-
-
-class Chain(object):
-    '''
-    NRG chain class.
-    
-    t0:
-        the coupling term of the first site and the impurity.
-    elist/tlist:
-        a list of on-site energies and coupling terms.
-    '''
-    def __init__(self,t0,elist,tlist):
-        self.t0=complex128(t0)
-        self.elist=complex128(elist)
-        self.tlist=complex128(tlist)
-
-    @property
-    def is_scalar(self):
-        '''True if this is a model mapped from scalar hybridization function.'''
-        return ndim(self.t0)<2
-
-    @property
-    def nband(self):
-        '''number of bands.'''
-        if self.is_scalar:
-            return 1
-        else:
-            return self.tlist.shape[-1]
-
-    def to_scalar(self):
-        '''transform 1-band non-scalar model to scalar one by remove redundant dimensions.'''
-        if self.nband!=1:
-            warnings.warn('Warning! Parse multi-band model to scalar model!')
-        return Chain(self.t0[...,0,0],self.elist[...,0,0],self.tlist[...,0,0])

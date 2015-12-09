@@ -1,41 +1,42 @@
-#!/usr/bin/python
 '''
 Tridiagonalization methods for both scalar(tridiagonalize) and block(tridiagonalize_qr) versions.
 Some test functions are also included.
 '''
+
 from numpy import *
 from scipy.linalg import *
 from scipy.sparse import diags,issparse
 from scipy.sparse.linalg import eigs
-from utils import mpconj,qr2
 from matplotlib.pyplot import *
 import scipy.sparse as sps
-import gmpy2
-import time,pdb
+import gmpy2,time,pdb
+
+from utils import mpconj,qr2
 
 def tridiagonalize(A, q, m=None,prec=None,getbasis=False):
     """
     Use m steps of the lanczos algorithm starting with q to generate
-    eigenvalues for the sparse symmetric matrix A.
+    the tridiagonal form of this matrix(The scalar version).
 
     A:
-        a sparse symmetric matrix.
+        A sparse symmetric matrix.
     q:
-        the starting vector.
+        The starting vector.
     m:
-        the steps to run.
+        The steps to run.
     getbasis:
-        return basis vectors if True.
-    *return*:
-        (data,offset,vectorbase)
+        Return basis vectors if True.
 
-        Use scipy.sparse.diags(res[0],res[1]) to generate a sparse matrix 
+    Return
+    ----------------------
+    A tuple of (data,offset,vectorbase<optional>).
+    Use scipy.sparse.diags(res[0],res[1]) to generate a sparse matrix 
     """
     if m==None:
         m=len(A)
 
     #set the precision, use gmpy2 if set.
-    if prec!=None:
+    if prec is None:
         gmpy2.get_context().precision=prec
         csqrt=vectorize(gmpy2.sqrt)
     else:
