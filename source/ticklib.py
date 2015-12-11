@@ -361,22 +361,16 @@ def get_ticker(tick_type,D,**kwargs):
     Gap=kwargs.get('Gap',0)
 
     if tick_type=='log':
-        print 'Using Logarithmic ticks.'
         ticker=LogTicker(Lambda,D=D,Gap=Gap)
     elif tick_type=='sclog':
-        print 'Using Logarithmic ticks designed for superconductor.'
         ticker=ScLogTicker(Lambda,D=D,Gap=Gap)
     elif tick_type=='adaptive':
-        print 'Using Adaptive Log ticks.'
         ticker=AdaptiveLogTicker(Lambda,wlist=wlist,rholist=rholist,r=r)
     elif tick_type=='linear':
-        print 'Using Linear ticks.'
         ticker=LinearTicker(N,D=D,Gap=Gap)
     elif tick_type=='adaptive_linear':
-        print 'Using Adaptive Linear ticks.'
         ticker=AdaptiveLinearTicker(N=N,wlist=wlist,rholist=rholist,r=r)
     elif tick_type=='ed':
-        print 'Using ED ticks.'
         ticker=EDTicker(N=N,wlist=wlist,rholist=rholist,wn=wn)
     else:
         raise Exception('Error','Undefined tick type %s'%tick_type)
