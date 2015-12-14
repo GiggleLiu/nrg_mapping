@@ -90,7 +90,7 @@ class MapTest():
         self.N=25
         nz=5
         self.z=linspace(0.5/nz,1-0.5/nz,nz)
-        self.discmodel=quick_map(rhofunc=self.rhofunc,wlist=self.wlist,N=self.N,z=self.z,Gap=self.Gap,Nx=200000,tick_params={'tick_type':'adaptive','Lambda':self.Lambda},autofix=1e-5)
+        self.discmodel=quick_map(rhofunc=self.rhofunc,wlist=self.wlist,N=self.N,z=self.z,Nx=200000,tick_params={'tick_type':'adaptive','Gap':self.Gap,'Lambda':self.Lambda},autofix=1e-5)
         assert_(self.discmodel.N_pos==self.N and self.discmodel.N_neg==self.N and self.discmodel.N==2*self.N)
         if nband==1:
             assert_(self.discmodel.Elist_pos.shape==(self.N,nz))
@@ -139,24 +139,28 @@ class MapTest():
         '''test for mapping'''
         plot_wlist=self.wlist[::50]
         if self.nband==2:
-            check_disc_pauli(rhofunc=self.rhofunc,wlist=plot_wlist,discmodel=self.discmodel,smearing=0.1,save_token='test')
+            check_disc(rhofunc=self.rhofunc,wlist=plot_wlist,discmodel=self.discmodel,smearing=1,mode='pauli')
             print '***The superconducting model needs some special gradients to cope the smearing factor here,\
                     \nwhich is not included for general purpose,\
                     \nso, don\'t be disappointed by the poor match here, they are artifacts.***'
             ylim(-0.1,0.2)
         elif self.nband==1 or self.nband==4:
-            check_disc_eval(rhofunc=self.rhofunc,wlist=plot_wlist,discmodel=self.discmodel,smearing=0.05,save_token='test')
+            check_disc(rhofunc=self.rhofunc,wlist=plot_wlist,discmodel=self.discmodel,smearing=0.2 if self.nband==1 else 0.4)
         pdb.set_trace()
 
     @dec.slow
     def test_chain(self):
         '''test for tridiagonalization.'''
         plot_wlist=self.wlist[::20]
-        #plot_wlist=linspace(self.D[0],self.D[1],200)
         chain=self.chain
         assert_(chain.nsite==self.N)
-        #check_spec(rhofunc=self.rhofunc,chain=chain,wlist=plot_wlist,smearing=1.)
-        check_spec(rhofunc=self.rhofunc,chain=chain,wlist=plot_wlist,smearing=1.,mode='pauli' if self.nband==2 else 'eval')
+        if nband==2:
+            smearing=1
+        elif nband==4:
+            smearing=0.4
+        else:
+            smearing=0.2
+        check_spec(rhofunc=self.rhofunc,chain=chain,wlist=plot_wlist,smearing=smearing,mode='pauli' if self.nband==2 else 'eval')
         if self.nband==2:
             ylim(-0.1,0.2)
         pdb.set_trace()
@@ -279,14 +283,32 @@ class LinTest(object):
             if func[:4]=='eigh':
                 assert_allclose(res_np[0],complex128(res_mp[0]))
                 assert_allclose(abs(res_np[1]),abs(complex128(res_mp[1])))
-            else:
+            elif func=='inv':
                 assert_allclose(res_np,complex128(res_mp))
+            else:
+                assert_allclose(complex128(res_mp.dot(res_mp)),A)
 
     def test_all(self):
         '''test all'''
         self.test_dim2()
         self.test_conj()
         self.test_qr()
+
+def test_all():
+    ion()
+    test_get_wlist()
+    test_hybri_sc()
+    for i in [1,2,4]:
+        t0=time.time()
+        ti=MapTest(i)
+        t1=time.time()
+        print 'Elapse, %s'%(t1-t0)
+        ti.test_tick()
+        ti.test_saveload()
+        ti.test_map()
+        ti.test_chain()
+    TridTest().test_all()
+    LinTest().test_all()
 
 #test_get_wlist()
 #test_hybri_sc()
@@ -296,3 +318,4 @@ class LinTest(object):
 #MapTest(4).test_chain()
 #TridTest().test_all()
 #LinTest().test_all()
+test_all()

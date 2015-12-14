@@ -12,22 +12,15 @@ def get_hybri(Gap,Gamma,D0=1.,mu=0.,eta=1e-10):
     '''
     Get the hybridization function D(w) for superconducting surface.
 
-    Parameters
-    ------------------
-    Gap:
-        The Gap value.
-    Gamma:
-        The overall hybridization strength.
-    D0:
-        The band width of normal DOS(The true bandwidth is sqrt(D0**2+Gap**2)).
-    mu:
-        Chemical potential.
-    eta:
-        The smearing factor.
+    Parameters:
+        :Gap: The Gap value.
+        :Gamma: The overall hybridization strength.
+        :D0: The band width of normal DOS(The true bandwidth is sqrt(D0**2+Gap**2)).
+        :mu: Chemical potential.
+        :eta: The smearing factor.
 
-    Return
-    -------------------
-    A function, which is the hybridization function for superconductor.
+    Return:
+        A function, which is the hybridization function for superconductor.
     '''
     def hybri(w):
         z=(w+1j*eta)
@@ -40,22 +33,15 @@ def get_hybri_wideband(Gap,Gamma,D=1.,mu=0.,eta=1e-10):
     '''
     Get the hybridization function D(w) for superconducting surface using wide-band approximation.
 
-    Parameter
-    ---------------------
-    Gap:
-        The Gap value.
-    Gamma:
-        The overall hybridization strength.
-    D:
-        The band width.
-    mu:
-        Chemical potential.
-    eta:
-        The smearing factor.
+    Parameter:
+        :Gap: The Gap value.
+        :Gamma: The overall hybridization strength.
+        :D: The band width.
+        :mu: Chemical potential.
+        :eta: The smearing factor.
 
-    Return
-    -------------------
-    A function, which is the hybridization function for superconductor with wideband approximation.
+    Return:
+        A function, which is the hybridization function for superconductor with wideband approximation.
     '''
     def hybri_wideband(w):
         E=sqrt(Gap**2-mu**2-(w+1j*eta)**2)
@@ -73,22 +59,15 @@ def get_hybri_skew(Gap,Gamma,skew,D=1.,eta=1e-10,g=False):
     '''
     Get the skewed hybridization function for superconductor.
 
-    Parameters
-    ---------------------
-    Gap:
-        The gap value.
-    Gamma/skew:
-        The overall strength, skew of hybridization function.
-    D:
-        The band-width.
-    eta:
-        Smearing factor, None for matsubara Green's function.
-    g:
-        Get self energy instead of hybridization function.
+    Parameters:
+        :Gap: The gap value.
+        :Gamma/skew: The overall strength, skew of hybridization function.
+        :D: The band-width.
+        :eta: Smearing factor, None for matsubara Green's function.
+        :g: Get self energy instead of hybridization function.
 
-    Return
-    -------------------
-    A function, which is the hybridization function for superconductor with sz term.
+    Return:
+        A function, which is the hybridization function for superconductor with sz term.
     '''
     one=identity(2)
     N0=Gamma/pi

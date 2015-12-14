@@ -1,12 +1,13 @@
-#Versatile NRG Mapping Scheme
-**Author**:  *Jinguo Leo*
+#Map a channel mixing bath to a chain
 
-**Paper**:  arXiv:1509.01461
+This is a versaltile mapping scheme starting from hybridization function,
+it maps a general multi-orbital non-interacting bath with channel mixing to a chain model.
 
-**Date**:  2015/09/07
+It provides a solution to impurity solvers that requires a concrete physical model(chain Hamiltonian), like NRG/vMPS et. al.
 
 ###To use this program
-Please install the following numerical packages for python
+Please install the following numerical packages for python(pip install -r requirements.txt)
+
 * numpy
 * scipy
 * matplotlib
@@ -15,12 +16,21 @@ Please install the following numerical packages for python
 
 or *Anaconda* all in one pack: https://store.continuum.io/cshop/anaconda/
 
-###To run a test
+###To run the first example.
     ```
-    python test.py
+    $ cd source/
+    $ python sample_simple.py
     ```
 
 ###Documentation
 * Theoritical Fundations: **doc/1509.01461v2.pdf**, **doc/SupplMater.pdf**
 * Technical Details: **doc/technical.pdf**
-* API document: **doc/API.pdf**
+* Program documentation: **doc/program_manual.pdf**
+
+###Information
+* Author:  Jinguo Leo, NanJing University.
+* Paper:  arXiv:1509.01461
+* Date:  2015/09/07
+* Contact: dg1422033@smail.nju.edu.cn
+
+

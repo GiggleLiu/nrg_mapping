@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #
-# LegBuilder documentation build configuration file, created by
+# NRGMapping documentation build configuration file, created by
 # sphinx-quickstart on Mon Sep  7 00:20:20 2015.
 #
 # This file is execfile()d with the current directory set to its
@@ -57,7 +57,7 @@ source_suffix = ['.rst']
 master_doc = 'index'
 
 # General information about the project.
-project = u'LegBuilder'
+project = u'NRGMapping'
 copyright = u'2015, Jinguo Leo'
 author = u'Jinguo Leo'
 
@@ -211,7 +211,7 @@ html_static_path = ['_static']
 #html_search_scorer = 'scorer.js'
 
 # Output file base name for HTML help builder.
-htmlhelp_basename = 'LegBuilderdoc'
+htmlhelp_basename = 'NRG-Mapping-doc'
 
 # -- Options for LaTeX output ---------------------------------------------
 
@@ -235,7 +235,7 @@ latex_elements = {
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
-  (master_doc, 'LegBuilder.tex', u'LegBuilder Documentation',
+  (master_doc, 'NRGMapping.tex', u'NRGMapping Documentation',
    u'Jinguo Leo', 'manual'),
 ]
 
@@ -265,7 +265,7 @@ latex_documents = [
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
 man_pages = [
-    (master_doc, 'legbuilder', u'LegBuilder Documentation',
+    (master_doc, 'nrgmapping', u'NRGMapping Documentation',
      [author], 1)
 ]
 
@@ -279,8 +279,8 @@ man_pages = [
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
 texinfo_documents = [
-  (master_doc, 'LegBuilder', u'LegBuilder Documentation',
-   author, 'LegBuilder', 'One line description of project.',
+  (master_doc, 'NRGMapping', u'NRGMapping Documentation',
+   author, 'NRGMapping', 'One line description of project.',
    'Miscellaneous'),
 ]
 

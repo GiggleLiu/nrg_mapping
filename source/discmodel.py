@@ -11,26 +11,22 @@ class DiscModel(object):
     '''
     Discrete model class.
 
-    Construct
-    ------------------------
-    DiscModel((Elist_neg,Elist_pos),(Tlist_neg,Tlist_pos),z=1.)
+    Construct:
+        DiscModel((Elist_neg,Elist_pos),(Tlist_neg,Tlist_pos),z=1.)
+
         z could be one or an array of float >0 but <=1.
 
-    Attributes
-    ----------------------
-    Elist_neg/Elist_pos/Elist(readonly)/Tlist_neg/Tlist_pos/Tlist(readonly):
-        An array of on-site energies and hopping terms.
-        The shape of Elist_neg/Tlist_neg is (N_neg,nz,nband,nband)
-        The shape of Elist_pos/Tlist_pos is (N_pos,nz,nband,nband)
-        The shape of Elist/Tlist is (N_pos+N_neg,nz,nband,nband)
-    z:
-        the twisting parameters.
-    nz:
-        The number of z-numbers(readonly)
-    nband:
-        The number of bands(readonly)
-    N_neg/N_pos/N:
-        The number of intervals for negative/positive/total band(readonly)
+    Attributes:
+        :Elist_neg/Elist_pos/Elist(readonly)/Tlist_neg/Tlist_pos/Tlist(readonly): An array of on-site energies and hopping terms.
+
+            * The shape of Elist_neg/Tlist_neg is (N_neg,nz,nband,nband)
+            * The shape of Elist_pos/Tlist_pos is (N_pos,nz,nband,nband)
+            * The shape of Elist/Tlist is (N_pos+N_neg,nz,nband,nband)
+        :z: The twisting parameters.
+        :nz: The number of z-numbers(readonly)
+        :nband: The number of bands(readonly)
+        :N_neg/N_pos/N: The number of intervals for negative/positive/total band(readonly)
+        :is_scalar: Is a single band scalar model if True(readonly)
     '''
     def __init__(self,Elists,Tlists,z=1.):
         if ndim(z)==0:
@@ -94,28 +90,26 @@ class DiscModel(object):
         '''
         Save data.
 
-        Parameters
-        ------------------------
-        token:
-            The target filename token.
+        Parameters:
+            :token: The target filename token.
 
-        Note
-        ------------------------
+        **Note:**
         For the scalar model mapped from SingleBandDiscHandler, with z=[0.3,0.7] and 2 sites for each-branch.
         The data file `negfile`(`posfile`) looks like:
-            E1    # z = 0.3
-            E1    # z = 0.7
-            E2    # z = 0.3
-            E2    # z = 0.7
-            T1    # z = 0.3
-            T1    # z = 0.7
-            T2    # z = 0.3
-            T2    # z = 0.7
+            | E1(z=0.7)
+            | E1(z=0.7)
+            | E2(z=0.7)
+            | E2(z=0.7)
+            | T1(z=0.7)
+            | T1(z=0.7)
+            | T2(z=0.7)
+            | T2(z=0.7)
 
         However, for the multi-band model, the parameters are allowed to take imaginary parts,
         Now, the data file for a two band model looks like:
-            E1[0,0].real, E1[0,0].imag, E1[0,1].real, E1[0,1].imag, E1[1,0].real, E1[1,0].imag, E1[1,1].real, E1[1,1].imag
-            ...
+            | E1[0,0].real, E1[0,0].imag, E1[0,1].real, E1[0,1].imag, E1[1,0].real, E1[1,0].imag, E1[1,1].real, E1[1,1].imag  #z=0.3
+            | ...
+
         It will take 8 columns to store each matrix element.
         '''
         N_neg,N_pos=self.N_neg,self.N_pos
@@ -138,10 +132,11 @@ def load_discmodel(token):
     '''
     Load specific data.
 
-    Parameters
-    ------------------------
-    token:
-        The target filename token.
+    Parameters:
+        :token: The target filename token.
+
+    Return:
+        A <DiscModel> instance.
     '''
     zfile='%s/%s.z.dat'%(DATA_FOLDER,token)
     negfile='%s/%s.neg.dat'%(DATA_FOLDER,token)

@@ -4,6 +4,7 @@ Physics utility library
 
 from numpy import *
 from scipy.linalg import eigh,norm,inv
+from scipy.interpolate import interp1d
 from matplotlib import cm
 from matplotlib.pyplot import *
 import gmpy2,pdb
@@ -26,10 +27,11 @@ def eigh_pauliv_npy(a0,a1,a2,a3):
     '''
     eigen values for pauli vectors - numpy version.
 
-    a0/a1/a2/a3:
-        pauli components.
-    *return*:
-        (evals,evecs)
+    Parameters:
+        :a0/a1/a2/a3: Pauli components.
+
+    Return:
+        Tuple of (eval,evecs), the eigenvalue decomposition of A.
     '''
     e0=sqrt(a1**2+a2**2+a3**2)
     evals=array([a0-e0,a0+e0])
@@ -45,8 +47,10 @@ def s2vec(s):
     '''
     Transform a 2 x 2 matrix to a 4 dimensional vector, corresponding to s0,sx,sy,sz component.
 
-    s: 
-        the matrix.
+    Parameters:
+        :s: The matrix.
+    Return:
+        len-4 vector indicating the pauli components.
     '''
     res=array([trace(s),trace(dot(sx,s)),trace(dot(sy,s)),trace(dot(sz,s))])/2
     return res
@@ -55,9 +59,9 @@ def vec2s(n):
     '''
     Transform a vector of length 3 or 4 to a pauli matrix.
 
-    n: 
-        a 1-D array of length 3 or 4 to specify the `direction` of spin.
-    *return*:
+    Parameters:
+        :n: 1D array of length 3 or 4 to specify the `direction` of spin.
+    Return:
         2 x 2 matrix.
     '''
     if len(n)<=3:
@@ -74,21 +78,19 @@ def H2G(h,w,tp='r',geta=1e-2,sigma=None):
     '''
     Get Green's function g from Hamiltonian h.
 
-    h: 
-        an array of hamiltonian.
-    w:
-        the energy(frequency).
-    tp:
-        the type of Green's function.
-        'r': retarded Green's function.(default)
-        'a': advanced Green's function.
-        'matsu': finite temperature Green's function.
-    geta:
-        smearing factor. default is 1e-2.
-    sigma:
-        additional self energy.
-    *return*:
-        a Green's function.
+    Parameters:
+        :h: An array of hamiltonian.
+        :w: The energy(frequency).
+        :tp: The type of Green's function.
+
+            * 'r': retarded Green's function.(default)
+            * 'a': advanced Green's function.
+            * 'matsu': finite temperature Green's function.
+        :geta: Smearing factor. default is 1e-2.
+        :sigma: Additional self energy.
+
+    Return:
+        A(Array of) Green's function.
     '''
     if tp=='r':
         z=w+1j*geta
@@ -107,14 +109,11 @@ def mpqr(A):
     '''
     Analytically, get the QR decomposition of a matrix.
 
-    Parameters
-    ---------------------
-    A:
-        The matrix.
+    Parameters:
+        :A: The matrix.
 
-    Return
-    ----------------------
-    (Q,R), where QR=A, Q is orthogonal by columns, and R is upper triangular.
+    Return:
+        (Q,R), where QR=A, Q is orthogonal by columns, and R is upper triangular.
     '''
     ndim=A.shape[1]
     Q=zeros([A.shape[0],0])
@@ -133,21 +132,14 @@ def plot_pauli_components(x,y,method='plot',ax=None,label=r'\sigma',**kwargs):
     Plot data by pauli components.
 
     Parameters
-    -------------------
-    x,y:
-        Datas.
-    ax:
-        The axis to plot, will use gca() to get one if None.
-    label:
-        The legend of plots.
-    method:
-        `plot` or `scatter`
-    kwargs:
-        The key word arguments for plot/scatter.
-    
-    Return
-    -------------------
-    A list of plot instances.
+        :x,y: Datas.
+        :ax: The axis to plot, will use gca() to get one if None.
+        :label: The legend of plots.
+        :method: `plot` or `scatter`
+        :kwargs: The key word arguments for plot/scatter.
+        
+    Return:
+        A list of plot instances.
     '''
     if ax is None: ax=gca()
     assert(ndim(x)==1 and ndim(y)==3 and y.shape[2]==2 and y.shape[1]==2)
@@ -169,8 +161,10 @@ def sqrth2(A):
     '''
     analytically, get square root of a hermion matrix.
 
-    A:
-        the matrix.
+    Parameters:
+        :A: The matrix.
+    Return:
+        2D array, The matrix squareroot of A.
     '''
     if len(A)!=2:
         raise Exception('Error','Matrix Dimension Error!')
@@ -190,8 +184,10 @@ def invh2(A):
     '''
     analytically, get inversion of a 2 dimensional hermion matrix.
 
-    A:
-        the matrix.
+    Parameters:
+        :A: the matrix.
+    Return:
+        2D array, The inversion of A.
     '''
     if len(A)!=2:
         raise Exception('Error','Matrix Dimension Error!')
@@ -206,8 +202,11 @@ def eigh2(A):
     '''
     analytically, get eigenvalues and eigenvactors of a 2 dimensional hermion matrix.
 
-    A:
-        the matrix.
+    Parameters:
+        :A: The matrix.
+
+    Return:
+        Tuple of (eval,evecs), the eigenvalue decomposition of A.
     '''
     if len(A)!=2:
         raise Exception('Error','Matrix Dimension Error!')
@@ -224,8 +223,10 @@ def eigh_pauliv_mpc(a0,a1,a2,a3):
     '''
     eigen values for pauli vectors - gmpy version.
 
-    a0/a1/a2/a3:
-        pauli vectors.
+    Parameters:
+        a0/a1/a2/a3: Pauli vectors.
+    Return:
+        Tuple of (eval,evecs), the eigenvalue decomposition of A.
     '''
     gmsqrt=gmpy2.sqrt
     gmnorm=gmpy2.norm
@@ -239,3 +240,39 @@ def eigh_pauliv_mpc(a0,a1,a2,a3):
         #evecs[i]=evecs[i]/gmsqrt(sum(gmnorm(evecs[i])))
         evecs[i]=evecs[i]/gmsqrt(gmnorm(evecs[i,0])+gmnorm(evecs[i,1]))
     return evals,evecs.T
+
+def exinterp(xlist,ylist):
+    '''
+    Linearly interplolate or extrapolate a curve, optimizing scipy.iterpolate.iterp1d to allow extrapolation.
+
+    Parameters:
+        :xlist/ylist: The input function y=f(x).
+    Return:
+        A inter/exter-polate function.
+    '''
+    interpolator=interp1d(xlist,ylist,axis=0)
+    xs = interpolator.x
+    ys = interpolator.y
+    def pointwise(x):
+        rk=ndim(x)
+        if rk==0:
+            if x < xs[0]:
+                return ys[0]+(x-xs[0])*(ys[1]-ys[0])/(xs[1]-xs[0])
+            elif x > xs[-1]:
+                return ys[-1]+(x-xs[-1])*(ys[-1]-ys[-2])/(xs[-1]-xs[-2])
+            else:
+                return interpolator(x)
+        else:
+            smask=x<xs[0]
+            lmask=x>xs[-1]
+            mmask=~(smask|lmask)
+            lxs=x[lmask]
+            sxs=x[smask]
+            mxs=x[mmask]
+            syl=ys[0]+(sxs-xs[0])*(ys[1]-ys[0])/(xs[1]-xs[0])
+            lyl=ys[-1]+(lxs-xs[-1])*(ys[-1]-ys[-2])/(xs[-1]-xs[-2])
+            myl=interpolator(mxs)
+            return concatenate([syl,myl,lyl],axis=0)
+    return pointwise
+
+

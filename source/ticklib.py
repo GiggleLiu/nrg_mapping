@@ -17,14 +17,11 @@ class Ticker(object):
     Base class for discretization tick generator.
     Use Ticker(x) to get the tick position of x.
 
-    Construct
-    --------------------
-    Ticker(tp)
+    Construct:
+        Ticker(tp)
 
-    Attributes
-    --------------------
-    tp:
-        The type string of this tick class.
+    Attributes:
+        :tp: The type string of this tick class.
     '''
     def __init__(self,tp):
         self.tp=tp
@@ -36,18 +33,14 @@ class Ticker(object):
 class LogTicker(Ticker):
     '''
     Logarithmic ticks.
-    \epsilon(x)=\Lambda^(2-x)
+    :math:`\epsilon(x)=\Lambda^{(2-x)}`
 
-    Construct
-    -------------------------
-    LogTicker(Lambda,D,Gap=0.,N=Inf)
+    Construct:
+        LogTicker(Lambda,D,Gap=0.,N=Inf)
 
-    Attributes
-    -------------------------
-    Lambda:
-        Scaling factor, a number between 1 and infinity(optimally choose as 1.5-10).
-    D/Gap:
-        The bandwidth/Gap range, then the hybridization function is defined in the interval Gap <= abs(w) <= bandwidth.
+    Attributes:
+        :Lambda: Scaling factor, a number between 1 and infinity(optimally choose as 1.5-10).
+        :D/Gap: The bandwidth/Gap range, then the hybridization function is defined in the interval Gap <= abs(w) <= bandwidth.
     '''
     def __init__(self,Lambda,D,Gap=0.):
         super(LogTicker,self).__init__('log')
@@ -73,19 +66,14 @@ class ScLogTicker(Ticker):
     '''
     Logarithmic tick suited for superconductor(logarithmic for normal state).
 
-    Construct
-    -------------------
-    ScLogTicker(Lambda,D,Gap)
+    Construct:
+        ScLogTicker(Lambda,D,Gap)
 
-    Attributes
-    -------------------
-    Lambda:
-        Scaling factor.
-    D/Gap:
-        The bandwidth/Gap range.
+    Attributes:
+        :Lambda: Scaling factor.
+        :D/Gap: The bandwidth/Gap range.
 
-    Note
-    --------------------
+    **Note:**
     It is in fact, a mimic for the discretization scheme given by JPSJ 61.3239
     '''
     def __init__(self,Lambda,D,Gap):
@@ -113,18 +101,13 @@ class ScLogTicker(Ticker):
 class LinearTicker(Ticker):
     '''
     Linear scale tick.
-    \epsilon(x)=\Lambda^(2-x)
 
-    Construct
-    -----------------------
-    LinearTicker(N,D,Gap=0.)
+    Construct:
+        LinearTicker(N,D,Gap=0.)
 
-    Attributes
-    ----------------------
-    N:
-        the number of intervals.
-    D/Gap:
-        the bandwidth/Gap range.
+    Attributes:
+        :N: The number of intervals.
+        :D/Gap: The bandwidth/Gap range.
     '''
     def __init__(self,N,D,Gap=0.):
         self.N=N
@@ -154,21 +137,14 @@ class AdaptiveTickerBase(Ticker):
     '''
     Base class of adaptive tick(Ref: Comp. Phys. Comm. 180.1271).
 
-    Construct
-    ------------------------
-    AdaptiveTickerBase(tp,xf,wlist,rlist)
+    Construct:
+        AdaptiveTickerBase(tp,xf,wlist,rlist),
+        `wlist` is the base space :math:`\\rho(\omega)`, and `rlist` is the weight function of rho(w).
 
-    wlist/rlist:
-        `wlist` is the base space rho(w), and `rlist` is the weight function of rho(w).
-
-    Attributes
-    --------------------------
-    xf:
-        A function defined on index-space(to decide logarithmic or linear...).
-    RD:
-        The integration over rho(w) from 0 to D.
-    iRfunc:
-        Inverse function of \int rho(w), iRfunc(x)=\int_0^w rho(w)
+    Attributes:
+        :xf: A function defined on index-space(to decide logarithmic or linear...).
+        :RD: The integration over rho(w) from 0 to D.
+        :iRfunc: Inverse function of :math:`\int \\rho(\omega)`, :math:`iRfunc(x)=\int_0^\omega \\rho(\omega)`
     '''
     def __init__(self,tp,xf,wlist,rlist):
         super(AdaptiveTickerBase,self).__init__(tp)
@@ -198,19 +174,12 @@ class AdaptiveLogTicker(AdaptiveTickerBase):
     '''
     Zitko's adaptive log scale tick(Ref: Comp. Phys. Comm. 180.1271).
 
-    Construct
-    ------------------------
-    AdaptiveLogTicker(Lambda,wlist,rholist,r=1.)
+    Construct:
+        AdaptiveLogTicker(Lambda,wlist,rholist,r=1.), `rholist` is the weight of rho defined frequency space `wlist`.
 
-    wlist,rholist:
-        `rholist` is the weight of rho defined frequency space `wlist`.
-
-    Attributes
-    ----------------------
-    Lambda:
-        Scaleing factor.
-    r:
-        Adaptive ratio, 1.0 for typical adaptive-log and 0 for traditional log.
+    Attributes:
+        :Lambda: Scaleing factor.
+        :r: Adaptive ratio, 1.0 for typical adaptive-log and 0 for traditional log.
     '''
     def __init__(self,Lambda,wlist,rholist,r=1.):
         self.Lambda=Lambda
@@ -225,19 +194,12 @@ class AdaptiveLinearTicker(AdaptiveTickerBase):
     '''
     Adaptive linear scale tick, with hopping terms constant.
 
-    Construct
-    ------------------------
-    AdaptiveLinearTicker(Lambda,wlist,rholist,r=1.)
+    Construct:
+        AdaptiveLinearTicker(Lambda,wlist,rholist,r=1.), `rholist` is the weight of rho defined frequency space `wlist`.
 
-    wlist,rholist:
-        `rholist` is the weight of rho defined frequency space `wlist`.
-
-    Attributes
-    ------------------------
-    N:
-        The number of intervals.
-    r:
-        Adaptive ratio, 1.0 for traditional adaptive and 0 for linear.
+    Attributes:
+        :N: The number of intervals.
+        :r: Adaptive ratio, 1.0 for traditional adaptive and 0 for linear.
     '''
     def __init__(self,N,wlist,rholist,r=1.):
         self.r=r
@@ -253,31 +215,19 @@ class EDTicker(Ticker):
     Scale tick optimized for Exact-diagonalization cost function(PRL 72.1545).
 
     Construct
-    --------------------------
-    EDTicker(N,wlist,rholist,wn)
-
-    wlist,rholist:
+        EDTicker(N,wlist,rholist,wn),
         `rholist` is the weight of rho defined frequency space `wlist`.
 
-    Attributes
-    --------------------------
-    N:
-        The number of intervals.
-    D:
-        The bandwidth.
-    wn:
-        The typical frequency to achieve the best fit.
-    Lambda:
-        The complex scaling factor.
-    RD:
-        The integration over rho(w) from 0 to D.
-    iRfunc:
-        Inverse function of \int rho(w), iRfunc(x)=\int_0^w rho(w)
-    xf:
-        A auxiliary function defined on index-space.
+    Attributes:
+        :N: The number of intervals.
+        :D: The bandwidth.
+        :wn: The typical frequency to achieve the best fit.
+        :Lambda: The complex scaling factor.
+        :RD: The integration over rho(w) from 0 to D.
+        :iRfunc: Inverse function of :math:`\int \\rho(\omega)`, :math:`iRfunc(x)=\int_0^\omega \\rho(\omega)`
+        :xf: A auxiliary function defined on index-space.
 
-    Note
-    ----------------------------
+    **Note:**
     The derivation of this tick distribution function involves many approximations,
     and is tested only for limited cases(like Bethe latttice, constant DOS).
 
@@ -327,24 +277,20 @@ def get_ticker(tick_type,D,**kwargs):
     '''
     Get specific <Ticker>.
 
-    Parameters
-    ---------------------
-    tick_type:
-        The type of discretization ticks,
+    Parameters:
+        :tick_type: The type of discretization ticks,
+
             * `log` -> logarithmic tick, kwargs: Lambda, Gap(optional)
             * `sclog` -> logarithmic ticks suited for superconductor, kwargs: Lambda, Gap(optional)
             * `adaptive` -> adaptive ticks, kwargs: Lambda, wlist, rholist, r(optional)
             * `linear` -> linear ticks, kwargs: N, Gap(optional)
             * `adaptive_linear` -> adaptive linear ticks, kwargs: N, wlist, rholist, r(optional)
             * `ed` -> ticks suited for fix number of intervals, kwargs: N, wlist, rholist, wn(optional)
-    D:
-        The bandwidth.
-    kwargs:
-        see tick_type.
+        :D: The bandwidth.
+        :kwargs: see tick_type.
 
-    Return
-    -----------------------
-    A <Ticker> instance.
+    Return:
+        A <Ticker> instance.
     '''
     Lambda=kwargs.get('Lambda')
     N=kwargs.get('N')

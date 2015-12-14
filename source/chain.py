@@ -10,12 +10,14 @@ __all__=['Chain','load_chain']
 
 class Chain(object):
     '''
-    NRG chain class.
+    Wilson chain class.
     
-    t0:
-        the coupling term of the first site and the impurity.
-    elist/tlist:
-        a list of on-site energies and coupling terms.
+    Attributes:
+        :t0: The coupling term of the first site and the impurity.
+        :elist/tlist: A list of on-site energies and coupling terms.
+        :is_scalar: True is it is a single band scalar chain.(readonly)
+        :nsite: The number of bath sites.(readonly)
+        :nsite: The number of bands.(readonly)
     '''
     def __init__(self,t0,elist,tlist):
         self.t0=complex128(t0)
@@ -44,14 +46,33 @@ class Chain(object):
         '''transform 1-band non-scalar model to scalar one by remove redundant dimensions.'''
         if self.nband!=1:
             warnings.warn('Warning! Parse multi-band model to scalar model!')
+            return
         return Chain(self.t0[...,0,0],self.elist[...,0,0],self.tlist[...,0,0])
 
     def save(self,token):
         '''
         save a Chain instance to files.
 
-        token:
-            a string as a prefix to store datas of a chain.
+        Parameters:
+            :token: A string as a prefix to store datas of a chain.
+
+        **Note:**
+        The data is stored in 3 files,
+
+        1. <token>.info.dat, len-4 array -> [chain length, number of z, nband, nband], i.g. the shape of elist.
+        2. <token>.el.dat, an array of on-site energies, in the format(2-band,2-site,z=[0.3,0.7] as an example)
+            | E0(z=0.3)[0,0].real E0(z=0.3)[0,0].imag
+            | E0(z=0.3)[0,1].real E0(z=0.3)[0,1].imag
+            | E0(z=0.3)[1,0].real E0(z=0.3)[1,0].imag
+            | E0(z=0.3)[0,1].real E0(z=0.3)[0,1].imag
+            | E0(z=0.7)[0,0].real E0(z=0.7)[0,0].imag
+            | E0(z=0.7)[0,1].real E0(z=0.7)[0,1].imag
+            | E0(z=0.7)[1,0].real E0(z=0.7)[1,0].imag
+            | E0(z=0.7)[0,1].real E0(z=0.7)[0,1].imag
+            | E1(z=0.3)[0,0].real E1(z=0.3)[0,0].imag
+            |              ... ...
+        3. <token>.tl.dat, an array of hopping terms with the first element by t0(coupling with the impurity).
+        The data format is similar to above.
         '''
         token='%s/'%DATA_FOLDER+token
         tlist=concatenate([self.t0[newaxis,...],self.tlist],axis=0)
@@ -63,10 +84,11 @@ def load_chain(token):
     '''
     load a Chain instance from files.
 
-    token:
-        a string as a prefix to store datas of a chain.
-    *return*:
-        a Chain instance.
+    Parameters:
+        :token: A string as a prefix to store datas of a chain.
+
+    Return:
+        A <Chain> instance.
     '''
     token='%s/'%DATA_FOLDER+token
     shape=loadtxt(token+'.info.dat')

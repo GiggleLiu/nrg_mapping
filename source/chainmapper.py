@@ -32,11 +32,13 @@ def map2chain(model,prec=5000):
     '''
     Map discretized model to a chain model using lanczos method.
 
-    model:
-        the discretized model(DiscModel instance).
+    Parameters:
+        :model: The discretized model(<DiscModel> instance).
+        :prec: The precision(by bit instead of digit),
+        :the higher, the slower, 2000 to 6000 is recommended.
 
-    *return*:
-        a Chain object
+    Return:
+        A <Chain> instance.
     '''
     Elist,Tlist=model.Elist,model.Tlist
     nsite=model.N_pos
@@ -80,23 +82,19 @@ def map2chain(model,prec=5000):
         t0,el,tl=t0[...,0,0],el[...,0,0],tl[...,0,0]
     return Chain(t0,el,tl)
 
-def check_spec(chain,rhofunc,wlist,mode='eval',smearing=1.,save_token=''):
+def check_spec(chain,rhofunc,wlist,mode='eval',smearing=1.):
     '''
-    check mapping quality.
+    Check mapping quality for wilson chain.
 
-    chain:
-        The chain after mapping.
-    rhofunc:
-        Hybridization function.
-    wlist:
-        The frequency space.
-    mode:
-        `eval` -> check eigenvalues
-        `pauli` -> check pauli components
-    smearing:
-        The smearing factor.
-    save_token:
-        The token to save figure.
+    Parameters:
+        :chain: The chain after mapping.
+        :rhofunc: Hybridization function.
+        :wlist: The frequency space.
+        :mode: Choose the checking method,
+            * `eval` -> check eigenvalues.
+            * `pauli` -> check pauli components, it is only valid for 2 band system.
+
+        :smearing: The smearing factor.
     '''
     tlist=chain.tlist
     elist=chain.elist
@@ -104,7 +102,6 @@ def check_spec(chain,rhofunc,wlist,mode='eval',smearing=1.,save_token=''):
     t0=chain.t0
     nz=chain.elist.shape[1]
     is_scalar=ndim(elist)==2
-    ion()
     print 'Recovering Spectrum ...'
     dlv=[]
     for iz in xrange(nz):
@@ -115,8 +112,8 @@ def check_spec(chain,rhofunc,wlist,mode='eval',smearing=1.,save_token=''):
         for w in wlist:
             sigma=0
             for e,t in zip(el[::-1],tl[::-1]):
-                geta=abs(w)+0.01
-                g0=H2G(w=w,h=e+sigma,geta=smearing/nz*geta)
+                geta=abs(w)+1e-10
+                g0=H2G(w=w,h=e+sigma,geta=smearing*geta/nz)
                 tH=transpose(conj(t))
                 sigma=dot(tH,dot(g0,t))
             dl.append(1j*(sigma-sigma.T.conj())/2./pi)
@@ -148,15 +145,10 @@ def check_spec(chain,rhofunc,wlist,mode='eval',smearing=1.,save_token=''):
             plts+=plot(wlist[mask],dlv0[mask,i],lw=3,color=colormap[i])
     for i in xrange(nplt):
         for mask in [wlist>0,wlist<0]:
-            plts.append(scatter(wlist[mask][::3],dlv[mask,i][::3],s=30,edgecolors=colormap[i],facecolors='none'))
+            plts.append(scatter(wlist[mask],dlv[mask,i],s=30,edgecolors=colormap[i],facecolors='none'))
     if mode=='pauli':
         legend(plts[::2],[r"$\rho_0$",r"$\rho_x$",r"$\rho_y$",r"$\rho_z$",r"$\rho''_0$",r"$\rho''_x$",r"$\rho''_y$",r"$\rho''_z$"],ncol=2)
     else:
         legend(plts[::2],[r"$\rho_%s$"%i for i in xrange(chain.nband)]+[r"$\rho''_%s$"%i for i in xrange(chain.nband)],ncol=2)
     xlabel(r'$\omega$',fontsize=16)
     xticks([-1,0,1],['-D',0,'D'],fontsize=16)
-
-    #saving data
-    filename='%s/checkspec_%s'%(DATA_FOLDER,save_token)
-    savefig(filename+'.png')
-

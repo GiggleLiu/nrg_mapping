@@ -25,27 +25,22 @@ def tridiagonalize(A, q, m=None,prec=5000,getbasis=False):
     Use m steps of the lanczos algorithm starting with q to generate
     the tridiagonal form of this matrix(The traditional scalar version).
 
-    A:
-        A sparse hermitian matrix.
-    q:
-        The starting vector.
-    m:
-        The steps to run.
-    prec:
-        The precision in bit, `None` for double precision.
-    getbasis:
-        Return basis vectors if True.
+    Parameters:
+        :A: A sparse hermitian matrix.
+        :q: The starting vector.
+        :m: The steps to run.
+        :prec: The precision in bit, `None` for double precision.
+        :getbasis: Return basis vectors if True.
 
-    Return
-    ----------------------
-    Tridiagonal part elements (data,offset),
-    data -> (lower part, middle part, upper part)
-    offset -> (-1, 0, 1) to indicate the value of (j-i) of specific data with i,j the matrix element indices.
+    Return:
+        Tridiagonal part elements (data,offset),
+        | data -> (lower part, middle part, upper part)
+        | offset -> (-1, 0, 1) to indicate the value of (j-i) of specific data with i,j the matrix element indices.
 
     To construct the matrix, set the block-matrix elements with block indices j-i == offset[k] to data[k].
     This is exactly what `construct_tridmat` function do.
 
-    Note: The initial vector q will be renormalized to guarant the correctness of result,
+    **Note:** The initial vector q will be renormalized to guarant the correctness of result,
     """
     if sps.issparse(A): A=A.toarray()
     if m==None:
@@ -56,7 +51,7 @@ def tridiagonalize(A, q, m=None,prec=5000,getbasis=False):
         gmpy2.get_context().precision=prec
         csqrt=vectorize(gmpy2.sqrt)
         cconj=linalg_mp['conj']
-        A=lin['tocomplex'](A)
+        A=linalg_mp['tocomplex'](A)
     else:
         csqrt=sqrt
         cconj=conj
@@ -98,30 +93,23 @@ def tridiagonalize2(A,q,m=None,prec=5000,getbasis=False):
     This is the symmetric version of block-tridiagonalization in contrast to `qr` version.
     However, only matrices with blocksize p = 2 are currently supported.
 
-    Parameters
-    --------------------------
-    A:
-        A sparse Hermitian matrix.
-    q:
-        The starting columnwise orthogonal vector q with shape (n*p,p) with p the block size and n the number of blocks.
-    m:
-        the steps to run.
-    prec:
-        The precision in bit, `None` for double precision.
-    getbasis:
-        Return basis vectors if True.
+    Parameters:
+        :A: A sparse Hermitian matrix.
+        :q: The starting columnwise orthogonal vector q with shape (n*p,p) with p the block size and n the number of blocks.
+        :m: the steps to run.
+        :prec: The precision in bit, `None` for double precision.
+        :getbasis: Return basis vectors if True.
 
-    Return
-    ---------------------
-    Tridiagonal part elements (data,offset),
-    data -> (lower part, middle part, upper part)
-    offset -> (-1, 0, 1) to indicate the value of (j-i) of specific data with i,j the matrix element indices.
+    Return:
+        Tridiagonal part elements (data,offset),
+        | data -> (lower part, middle part, upper part)
+        | offset -> (-1, 0, 1) to indicate the value of (j-i) of specific data with i,j the matrix element indices.
 
-    To construct the matrix, set the block-matrix elements with block indices j-i == offset[k] to data[k].
-    This is exactly what `construct_tridmat` function do.
+        To construct the matrix, set the block-matrix elements with block indices j-i == offset[k] to data[k].
+        This is exactly what `construct_tridmat` function do.
 
-    Note: The orthogonality of initial vector q will be re-inforced to guarant the convergent result,
-    meanwhile, the orthogonality of starting vector is also checked.
+        **Note:** The orthogonality of initial vector q will be re-inforced to guarant the convergent result,
+        meanwhile, the orthogonality of starting vector is also checked.
     """
     n=q.shape[1]
     assert(n==2)  #only block dimension 2 is implemented!
@@ -183,31 +171,22 @@ def tridiagonalize_qr(A,q,m=None,prec=5000):
     """
     Use m steps of the lanczos algorithm starting with q - the block QR decomposition version.
 
-    Parameters
-    ---------------------
-    A:
-        A sparse Hermitian matrix.
-    q:
-        The starting columnwise orthogonal vector q with shape (n*p,p) with p the block size and n the number of blocks.
-    m:
-        The number of iteractions.
-    prec:
-        The precision in bit, `None` for double precision.
+    Parameters:
+        :A: A sparse Hermitian matrix.
+        :q: The starting columnwise orthogonal vector q with shape (n*p,p) with p the block size and n the number of blocks.
+        :m: The number of iteractions.
+        :prec: The precision in bit, `None` for double precision.
 
-    getbasis:
-        Return basis vectors if True.
+    Return:
+        Tridiagonal part elements (data,offset),
+        | data -> (lower part, middle part, upper part)
+        | offset -> (-1, 0, 1) to indicate the value of (j-i) of specific data with i,j the matrix element indices.
 
-    Return
-    ---------------------
-    Tridiagonal part elements (data,offset),
-    data -> (lower part, middle part, upper part)
-    offset -> (-1, 0, 1) to indicate the value of (j-i) of specific data with i,j the matrix element indices.
+        To construct the matrix, set the block-matrix elements with block indices j-i == offset[k] to data[k].
+        This is exactly what `construct_tridmat` function do.
 
-    To construct the matrix, set the block-matrix elements with block indices j-i == offset[k] to data[k].
-    This is exactly what `construct_tridmat` function do.
-
-    Note: The orthogonality of initial vector q will be re-inforced to guarant the convergent result,
-    meanwhile, the orthogonality of starting vector is also checked.
+        **Note:** The orthogonality of initial vector q will be re-inforced to guarant the convergent result,
+        meanwhile, the orthogonality of starting vector is also checked.
     """
     n=q.shape[1]
     if sps.issparse(A): A=A.toarray()
@@ -255,16 +234,12 @@ def construct_tridmat(data,offset):
     '''
     Construct tridiagonal matrix.
 
-    Parameters
-    ---------------------
-    data:
-        The datas of lower, middle, upper tridiagonal part.
-    offset:
-        The offsets indicating the position of datas.
+    Parameters:
+        :data: The datas of lower, middle, upper tridiagonal part.
+        :offset: The offsets indicating the position of datas.
 
-    Return
-    ---------------------
-    2D sparse matrix, use res.toarray() to get a dense array.
+    Return:
+        2D sparse matrix, use res.toarray() to get a dense array.
     '''
     n=len(data[1])
     if ndim(data[1])==1:
