@@ -13,7 +13,7 @@ rhofunc=lambda w:identity(2)+0.4*sx+0.5*(0.1+w**2)*sy
 
 #map it to a sun model
 discmodel=quick_map(wlist=wlist,rhofunc=rhofunc,N=35,z=linspace(0.05,0.95,10),\
-        tick_params={'tick_type':'adaptive','Lambda':2.})
+        tick_params={'tick_type':'adaptive','Lambda':2.})[1]
 
 #map it to a Wilson chain
 chain=map2chain(discmodel,prec=3000)

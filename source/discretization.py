@@ -25,15 +25,15 @@ def get_wlist(w0,Nw,mesh_type,D=1,Gap=0):
     A well defined mesh can make the rho(w) more accurate.
 
     Parameters:
-        :w0: The starting w for wlist for `log` and `sclog` type wlist..
-        :Nw: The number of samples in each branch.
-        :mesh_type: The type of wlist.
+        :w0: float, The starting w for wlist for `log` and `sclog` type wlist..
+        :Nw: integer, The number of samples in each branch.
+        :mesh_type: string, The type of wlist.
 
             * `linear` -> linear mesh.
             * `log` -> log mesh.
             * `sclog` -> log mesh suited for superconductors.
-        :D: Interger or len-2 tuple, the band interval.
-        :Gap: Interger or len-2 tuple, the gap interval.
+        :D: Interger/len-2 tuple, the band interval.
+        :Gap: Interger/len-2 tuple, the gap interval.
 
     Return:
         1D array, the frequency space.
@@ -71,13 +71,13 @@ class SingleBandDiscHandler(DiscHandler):
         with the wlist, rholist containing both positive and negative branches.
 
     Attributes:
-        :nband: The number of bands with respect to hybridization function, readonly.
-        :wlists: A tuple (wlist_neg,wlist_pos) defining the frequency space.
-        :rholists: A tuple (rholist_neg,rholist_pos) of the hybridization function defined on `wlists`.
-        :int_rholists: A tuple (rholist_pos_int,rholist_neg_int), integration of rholists over `wlist`.
-        :tickers: A `function`(<Ticker> instance is going to be used) of discretization points $\epsilon(x)$.
-        :wlist,rholist: Whole frequency space and rho(w) defined on it(readonly).
-        :D: The band range(readonly).
+        :nband: integer, the number of bands with respect to hybridization function, readonly.
+        :wlists: len-2 tuple (wlist_neg,wlist_pos) defining the frequency space.
+        :rholists: len-2 tuple (rholist_neg,rholist_pos) of the hybridization function defined on `wlists`.
+        :int_rholists: len-2 tuple (rholist_pos_int,rholist_neg_int), integration of rholists over `wlist`.
+        :tickers: len-2 tuple with elements function/<Ticker> of discretization points $\epsilon(x)$.
+        :wlist,rholist: 1D array,ndarray, Whole frequency space and rho(w) defined on it(readonly).
+        :D: len-2 list with integer elements, the band range(readonly).
     '''
     def __init__(self,wlist,rholist,tickers):
         assert(all(rholist>=0))
@@ -142,11 +142,11 @@ class MultiBandDiscHandler(DiscHandler):
     *autofix* is the the negative tolerence for eigen values of rho(w), above which it will be automatically fixed to 0.
 
     Attributes:
-        :tickers: The tick generator, a function or a callable instance.
-        :wlist: The frequency space.
-        :rholist: The hybridization function defined on `wlist`.
-        :single_band_handlers: A list of <SingleBandDiscHandler> instances to handler mapping at each eigen-value channel.
-        :nband: The number of bands with respect to hybridization function 
+        :tickers: len-2 list with elements <Ticker>/function, The tick generator, a function or a callable instance.
+        :wlist: 1D array, The frequency space.
+        :rholist: ndarray, The hybridization function defined on `wlist`.
+        :single_band_handlers: <SingleBandDiscHandler>, A list of <SingleBandDiscHandler> instances to handler mapping at each eigen-value channel.
+        :nband: integer, The number of bands with respect to hybridization function 
     '''
     def __init__(self,rhofunc,wlist,tickers,autofix=1e-5):
         self.rhofunc=rhofunc
@@ -183,8 +183,8 @@ class MultiBandDiscHandler(DiscHandler):
         Get the representative hopping and on-site energy Tfunc/Efunc for multi-band system.
 
         Parameters:
-            :sgn: 0/1 to specify the negative/positive branch.
-            :xmax,Nx: The upper limit of x, and the number of samples in x-space for integration and interpolation.
+            :sgn: integer, 0/1 to specify the negative/positive branch.
+            :xmax,Nx: interger, The upper limit of x, and the number of samples in x-space for integration and interpolation.
 
         Return:
             A tuple of functions of representative hopping and energy (T(x),E(x)).
@@ -222,10 +222,10 @@ def check_disc(rhofunc,discmodel,wlist,smearing=0.02,mode='eval'):
     check the discretization quality by eigenvalues - the multiple-band Green's function version.
 
     Parameters:
-        :rhofunc: The original hybridization function.
-        :discmodel: The discretized model.
-        :wlist: The frenquncy space.
-        :smearing: Smearing constant.
+        :rhofunc: function, The original hybridization function.
+        :discmodel: <DiscModel>, The discretized model.
+        :wlist: 1D array, the frenquncy space.
+        :smearing: float, smearing constant.
     '''
     print 'Start checking the mapping of discretized model!'
     t0=time.time()
@@ -266,12 +266,12 @@ def quick_map(rhofunc,wlist,N,z=1.,Nx=500000,tick_params=None,autofix=1e-5):
     Perform quick mapping(All in one suit!) for nband x nband hybridization matrix.
 
     Parameters:
-        :rhofunc: The hybridization function.
-        :wlist: The frequency space holding this hybridization function, 1D array.
-        :N: The number of discrete sites for each z number, int.
-        :z: Twisting parameters, float or 1D array.
-        :Nx: The number of samples for integration over rho(epsilon(x)), int.
-        :tick_params: The parameters for ticks, dict with the following keys:
+        :rhofunc: function, The hybridization function.
+        :wlist: 1D array, the frequency space holding this hybridization function.
+        :N: integer, The number of discrete sites for each z number.
+        :z: float/1D array, twisting parameters.
+        :Nx: integer, The number of samples for integration over rho(epsilon(x)).
+        :tick_params: dict, the parameters for ticks, the following keys could be available,
 
             * `tick_type` -> The type of ticks
                 'log': logarithmic tick,
@@ -285,10 +285,10 @@ def quick_map(rhofunc,wlist,N,z=1.,Nx=500000,tick_params=None,autofix=1e-5):
             * `Gap` -> The gap region of the hybridization function, it is used in discretization schemes
             that do not allow zeros in hybridization function: `log`, `sclog`, `linear`(default: 0).
 
-        :autofix: Automatically fix the occational small negative eigenvalue(>=autofix) of rho(w) to 0, float.
+        :autofix: float, Automatically fix the occational small negative eigenvalue(>=autofix) of rho(w) to 0.
 
     Return:
-        A <DiscModel> instance.
+        Tuple of (<Ticker>,<DiscModel>).
     '''
     D=[wlist[0],wlist[-1]]
     z=array(z)
@@ -336,5 +336,5 @@ def quick_map(rhofunc,wlist,N,z=1.,Nx=500000,tick_params=None,autofix=1e-5):
     Elists=[array([[funcs[sgn][1](x) for x in xi] for xi in ticks]) for sgn in branches]
     print 'Done.'
     model=DiscModel(Elists,Tlists,z)
-    return model
+    return tickers,model
 

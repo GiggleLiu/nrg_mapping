@@ -35,7 +35,7 @@ def run():
 tick type -> %s
 Lambda    -> %s
 '''%(N,nz,tick_type,Lambda)
-    discmodel=quick_map(rhofunc=rhofunc,wlist=wlist,N=N,z=z,Nx=200000,tick_params={'tick_type':tick_type,'Lambda':Lambda},autofix=1e-5)
+    discmodel=quick_map(rhofunc=rhofunc,wlist=wlist,N=N,z=z,Nx=200000,tick_params={'tick_type':tick_type,'Lambda':Lambda},autofix=1e-5)[1]
 
     #map to a chain
     print 'Start mapping the discrete model to a chain, using precision %s-bit.'%PRECISION

@@ -24,12 +24,10 @@ A hybridization function should be a function(any callable instance) with only o
 and ouput variable :math:`{\Delta(\omega)}` which could be either a number of a square matrix.
 
 The choice of :math:`\omega` space is important, if a linear :math:`\omega`-mesh is choosen naively,
-the precision near :math:`\omega=0` is not guranteened.
-    .. hint::
-        To generate a logarithmic :math:`\omega`-list::
+the precision near :math:`\omega=0` is not guranteened. To generate a logarithmic :math:`\omega`-list::
 
-            >>> from discretization import get_wlist
-            >>> wlist = get_wlist(w0=1e-8,Nw=5000,mesh_type='log',D=1,Gap=0)
+    >>> from discretization import get_wlist
+    >>> wlist = get_wlist(w0=1e-8,Nw=5000,mesh_type='log',D=1,Gap=0)
 
 Here, parameter  *Gap* is the gapped interval, and *w0* is the onset(the minimum energy scale) of logarithmic mesh.
 
@@ -44,7 +42,15 @@ Other types of discretization meshes like *log*, *linear* et. al. which can be u
 Mapping procedure
 ---------------------
 The simplist approach to discretize the continuous hybridization function is to use the *discretization.quick_map* function.
-A <DiscModel> instance is returned by this function, which is nicknamed "sun model" or "star model" with bath replaced by a set of sites directly coupled to the impurity.
+Tuple of (<Ticker>s, <DiscModel>) is returned by this function.
+
+<Ticker>s is a list with <Ticker> instances for negative and positive branches. The discrete ticks can be generated using::
+
+    >>> indices = arange(1,10)    #the decrete indices.
+    >>> z = 1.0        #twisting parameter
+    >>> tick_position = ticker(indices+z)   #tick position is always positive.
+
+<DiscModel> is nicknamed "sun model" or "star model" with bath replaced by a set of sites directly coupled to the impurity.
 
 The interface of *quick_map* looks like
 .. autofunction:: discretization.quick_map

@@ -90,7 +90,7 @@ class MapTest():
         self.N=25
         nz=5
         self.z=linspace(0.5/nz,1-0.5/nz,nz)
-        self.discmodel=quick_map(rhofunc=self.rhofunc,wlist=self.wlist,N=self.N,z=self.z,Nx=200000,tick_params={'tick_type':'adaptive','Gap':self.Gap,'Lambda':self.Lambda},autofix=1e-5)
+        self.discmodel=quick_map(rhofunc=self.rhofunc,wlist=self.wlist,N=self.N,z=self.z,Nx=200000,tick_params={'tick_type':'adaptive','Gap':self.Gap,'Lambda':self.Lambda},autofix=1e-5)[1]
         assert_(self.discmodel.N_pos==self.N and self.discmodel.N_neg==self.N and self.discmodel.N==2*self.N)
         if nband==1:
             assert_(self.discmodel.Elist_pos.shape==(self.N,nz))
