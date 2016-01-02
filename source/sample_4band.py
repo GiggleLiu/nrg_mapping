@@ -28,7 +28,7 @@ def run():
 
     #create the discretized model
     N=33      #the chain length
-    nz=20      #the number of twisting parameter z
+    nz=50      #the number of twisting parameter z
     z=linspace(0.5/nz,1-0.5/nz,nz)
     tick_type='adaptive'
 
@@ -42,7 +42,7 @@ Lambda    -> %s
 
     #map to a chain
     print 'Start mapping the discrete model to a chain, using precision %s-bit.'%PRECISION
-    chain=map2chain(discmodel,prec=PRECISION)
+    chains=map2chain(discmodel,prec=PRECISION)
     print 'Done'
 
     plot_wlist=wlist[::30]
@@ -56,13 +56,14 @@ Lambda    -> %s
     docheck=raw_input('Check whether this chain recover the hybridization function?(y/n):')=='y'
     if docheck:
         ion();cla()
-        check_spec(rhofunc=rhofunc,chain=chain,wlist=plot_wlist,smearing=0.7,mode='eval')
+        check_spec(rhofunc=rhofunc,chains=chains,wlist=plot_wlist,smearing=0.7,mode='eval')
         print 'Press `c` to continue.'
         pdb.set_trace()
 
     dosave=raw_input('Save the chain datas?(y/n):')=='y'
     if dosave:
-        chain.save('4band')
+        for iz,chain in zip(z,chains):
+            chain.save('4band_%s'%iz)
 
 if __name__=='__main__':
     run()

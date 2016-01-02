@@ -13,11 +13,11 @@ class Chain(object):
     Wilson chain class.
     
     Attributes:
-        :t0: The coupling term of the first site and the impurity.
-        :elist/tlist: A list of on-site energies and coupling terms.
-        :is_scalar: True is it is a single band scalar chain.(readonly)
-        :nsite: The number of bath sites.(readonly)
-        :nsite: The number of bands.(readonly)
+        :t0: number/2D array, the coupling term of the first site and the impurity.
+        :elist/tlist: 2D array/4D array, A list of on-site energies and coupling terms.
+        :is_scalar: bool, True is it is a single band scalar chain.(readonly)
+        :nband: integer, the number of bath sites.(readonly)
+        :nsite: integer, the number of bands.(readonly)
     '''
     def __init__(self,t0,elist,tlist):
         self.t0=complex128(t0)
@@ -27,7 +27,7 @@ class Chain(object):
     @property
     def is_scalar(self):
         '''True if this is a model mapped from scalar hybridization function.'''
-        return ndim(self.t0)<=2
+        return ndim(self.t0)<2
 
     @property
     def nsite(self):
@@ -59,18 +59,14 @@ class Chain(object):
         **Note:**
         The data is stored in 3 files,
 
-        1. <token>.info.dat, len-4 array -> [chain length, number of z, nband, nband], i.g. the shape of elist.
-        2. <token>.el.dat, an array of on-site energies, in the format(2-band,2-site,z=[0.3,0.7] as an example)
-            | E0(z=0.3)[0,0].real E0(z=0.3)[0,0].imag
-            | E0(z=0.3)[0,1].real E0(z=0.3)[0,1].imag
-            | E0(z=0.3)[1,0].real E0(z=0.3)[1,0].imag
-            | E0(z=0.3)[0,1].real E0(z=0.3)[0,1].imag
-            | E0(z=0.7)[0,0].real E0(z=0.7)[0,0].imag
-            | E0(z=0.7)[0,1].real E0(z=0.7)[0,1].imag
-            | E0(z=0.7)[1,0].real E0(z=0.7)[1,0].imag
-            | E0(z=0.7)[0,1].real E0(z=0.7)[0,1].imag
-            | E1(z=0.3)[0,0].real E1(z=0.3)[0,0].imag
-            |              ... ...
+        1. <token>.info.dat, len-4 array -> [chain length, nband, nband], i.g. the shape of elist.
+        2. <token>.el.dat, an array of on-site energies, in the format(2-band,2-site as an example)
+            | E0[0,0].real E0[0,0].imag
+            | E0[0,1].real E0[0,1].imag
+            | E0[1,0].real E0[1,0].imag
+            | E0[0,1].real E0[0,1].imag
+            | E1[0,0].real E1[0,0].imag
+            |          ... ...
         3. <token>.tl.dat, an array of hopping terms with the first element by t0(coupling with the impurity).
         The data format is similar to above.
         '''

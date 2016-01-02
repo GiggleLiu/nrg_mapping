@@ -39,7 +39,7 @@ Lambda    -> %s
 
     #map to a chain
     print 'Start mapping the discrete model to a chain, using precision %s-bit.'%PRECISION
-    chain=map2chain(discmodel,prec=PRECISION)
+    chains=map2chain(discmodel,prec=PRECISION)
     print 'Done'
 
     plot_wlist=wlist[::30]
@@ -53,13 +53,14 @@ Lambda    -> %s
     docheck=raw_input('Check whether this chain recover the hybridization function?(y/n):')=='y'
     if docheck:
         ion();cla()
-        check_spec(rhofunc=rhofunc,chain=chain,wlist=plot_wlist,smearing=1.,mode='pauli' if nband==2 else 'eval')
+        check_spec(rhofunc=rhofunc,chains=chains,wlist=plot_wlist,smearing=1.,mode='pauli' if nband==2 else 'eval')
         print 'Press `c` to continue.'
         pdb.set_trace()
 
     dosave=raw_input('Save the chain datas?(y/n):')=='y'
     if docheck:
-        chain.save('singleband')
+        for iz,chain in zip(z,chains):
+            chain.save('singleband_%s'%iz)
 
 if __name__=='__main__':
     run()

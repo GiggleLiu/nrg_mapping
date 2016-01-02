@@ -16,7 +16,7 @@ discmodel=quick_map(wlist=wlist,rhofunc=rhofunc,N=35,z=linspace(0.05,0.95,10),\
         tick_params={'tick_type':'adaptive','Lambda':2.})[1]
 
 #map it to a Wilson chain
-chain=map2chain(discmodel,prec=3000)
+chains=map2chain(discmodel,prec=3000)
 
 #do some checking
 #check the sun model
@@ -26,6 +26,6 @@ check_disc(rhofunc=rhofunc,wlist=wlist[20::40],discmodel=discmodel,\
 plt.ylim(-0.1,1.1)
 #check the chain
 plt.subplot(212)
-check_spec(rhofunc=rhofunc,chain=chain,wlist=wlist[20::40],mode='pauli',smearing=0.7)
+check_spec(rhofunc=rhofunc,chains=chains,wlist=wlist[20::40],mode='pauli',smearing=0.7)
 plt.ylim(-0.1,1.1)
 plt.show()

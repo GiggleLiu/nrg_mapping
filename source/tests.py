@@ -33,7 +33,6 @@ def test_get_wlist():
         assert_almost_equal(wlist[-1],D[-1])
         assert_(all(wlist[wlist>0]>=Gap[1]) and all(wlist[wlist<0]<=Gap[0]))
         assert_(len(wlist)==2*Nw)
-    pdb.set_trace()
 
 def test_hybri_sc():
     '''test hybridization function for superconductor.'''
@@ -58,7 +57,6 @@ def test_hybri_sc():
         ylim(-0.1,0.2)
     assert_allclose(dls[0],dls[1],atol=1e-5)
     tight_layout()
-    pdb.set_trace()
 
 class MapTest():
     '''test hybridization function for superconductor.'''
@@ -98,22 +96,23 @@ class MapTest():
             assert_(self.discmodel.Elist_pos.shape==(self.N,nz,nband,nband))
 
         #map to a chain
-        self.chain=map2chain(self.discmodel,prec=PRECISION)
+        self.chains=map2chain(self.discmodel,prec=PRECISION)
 
     def test_saveload(self):
         '''save and load data.'''
-        token='test'
-        self.discmodel.save(token)
-        model=load_discmodel(token)
-        assert_allclose(model.Elist,self.discmodel.Elist)
-        assert_allclose(model.Tlist,self.discmodel.Tlist)
-        assert_allclose(model.z,self.discmodel.z)
+        for iz,chain in zip(self.z,self.chains):
+            token='test_%s'%iz
+            self.discmodel.save(token)
+            model=load_discmodel(token)
+            assert_allclose(model.Elist,self.discmodel.Elist)
+            assert_allclose(model.Tlist,self.discmodel.Tlist)
+            assert_allclose(model.z,self.discmodel.z)
 
-        self.chain.save(token)
-        chain2=load_chain(token)
-        assert_allclose(chain2.elist,self.chain.elist)
-        assert_allclose(chain2.tlist,self.chain.tlist)
-        assert_allclose(chain2.t0,self.chain.t0)
+            chain.save(token)
+            chain2=load_chain(token)
+            assert_allclose(chain2.elist,chain.elist)
+            assert_allclose(chain2.tlist,chain.tlist)
+            assert_allclose(chain2.t0,chain.t0)
 
     def test_tick(self):
         '''test for ticks.'''
@@ -132,7 +131,6 @@ class MapTest():
             ticker=get_ticker(tick_type,D=self.D[1],N=N,Lambda=Lambda,Gap=self.Gap,wlist=wlist[pmask],rholist=rholist)
             plt=scatter(ticker(arange(2,2+N+1)),offset_y*ones(N+1),edgecolor='none',color=colors[i],label=tick_type)
         legend(loc=3)
-        pdb.set_trace()
 
     @dec.slow
     def test_map(self):
@@ -146,24 +144,23 @@ class MapTest():
             ylim(-0.1,0.2)
         elif self.nband==1 or self.nband==4:
             check_disc(rhofunc=self.rhofunc,wlist=plot_wlist,discmodel=self.discmodel,smearing=0.2 if self.nband==1 else 0.4)
-        pdb.set_trace()
 
     @dec.slow
     def test_chain(self):
         '''test for tridiagonalization.'''
         plot_wlist=self.wlist[::20]
-        chain=self.chain
-        assert_(chain.nsite==self.N)
+        chains=self.chains
+        assert_(chains[0].nsite==self.N)
+        nband=self.nband
         if nband==2:
             smearing=1
         elif nband==4:
             smearing=0.4
         else:
             smearing=0.2
-        check_spec(rhofunc=self.rhofunc,chain=chain,wlist=plot_wlist,smearing=smearing,mode='pauli' if self.nband==2 else 'eval')
+        check_spec(rhofunc=self.rhofunc,chains=chains,wlist=plot_wlist,smearing=smearing,mode='pauli' if self.nband==2 else 'eval')
         if self.nband==2:
             ylim(-0.1,0.2)
-        pdb.set_trace()
 
 class TridTest(object):
     '''test tridiagonalization.'''
@@ -240,7 +237,6 @@ class TridTest(object):
                         if p==2:
                             print 'Running n=%s,p=%s,matrix_type=%s,prec=%s,method=%s'%(n,p,matrix_type,prec,'sqrtm')
                             self.test1(n=n,p=p,prec=prec,matrix_type=matrix_type,method='sqrtm')
-        pdb.set_trace()
 
 class LinTest(object):
     def __init__(self):

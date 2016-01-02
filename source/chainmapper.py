@@ -46,7 +46,7 @@ def map2chain(model,prec=5000):
 
     #first, orthogonalize Tlist to get the first site.
     ntask=(model.nz-1)/SIZE+1
-    t0li=[];eli=[];tli=[]
+    cl=[]
     for i in xrange(model.nz):
         if i/ntask==RANK:
             ti=Tlist[:,i]  #unitary vector
@@ -58,56 +58,43 @@ def map2chain(model,prec=5000):
             eml=Elist[:,i]
             #multi-band lanczos,
             H=block_diag(eml)
-            data,offset=tridiagonalize_qr(H,q=qq.reshape([-1,model.nband]),m=nsite,prec=prec)  #we need to perform N+1 recursion to get N sub-diagonal terms.
-            t0li.append(t0)
-            eli.append(data[1])
-            tli.append(data[2])
+            if is_scalar:
+                data,offset=tridiagonalize(H,q=qq[:,0],m=nsite,prec=prec)  #we need to perform N+1 recursion to get N sub-diagonal terms.
+                chain=Chain(t0[0,0],data[1],data[2])
+            else:
+                data,offset=tridiagonalize_qr(H,q=qq.reshape([-1,model.nband]),m=nsite,prec=prec)  #we need to perform N+1 recursion to get N sub-diagonal terms.
+                chain=Chain(t0,data[1],data[2])
+            cl.append(chain)
     if SIZE>1:
-        t0l=COMM.gather(t0li,root=0)
-        el=COMM.gather(eli,root=0)
-        tl=COMM.gather(tli,root=0)
+        cl=COMM.gather(cl,root=0)
         if RANK==0:
-            t0l=concatenate(t0l,axis=0)
-            el=concatenate(el,axis=0)
-            tl=concatenate(tl,axis=0)
-        t0l=COMM.bcast(t0l,root=0)
-        el=COMM.bcast(el,root=0)
-        tl=COMM.bcast(tl,root=0)
-    else:
-        t0l=t0li;tl=tli;el=eli
-    t0=complex128(t0l)
-    el=swapaxes(complex128(el),0,1)
-    tl=swapaxes(complex128(tl),0,1)
-    if is_scalar:
-        t0,el,tl=t0[...,0,0],el[...,0,0],tl[...,0,0]
-    return Chain(t0,el,tl)
+            cl=concatenate(cl,axis=0)
+        cl=COMM.bcast(cl,root=0)
+    return cl
 
-def check_spec(chain,rhofunc,wlist,mode='eval',smearing=1.):
+def check_spec(chains,rhofunc,wlist,mode='eval',smearing=1.):
     '''
     Check mapping quality for wilson chain.
 
     Parameters:
-        :chain: The chain after mapping.
-        :rhofunc: Hybridization function.
-        :wlist: The frequency space.
-        :mode: Choose the checking method,
-            * `eval` -> check eigenvalues.
-            * `pauli` -> check pauli components, it is only valid for 2 band system.
+        :chains: list, a list of chain after mapping.
+        :rhofunc: function, Hybridization function.
+        :wlist: 1D array, the frequency space.
+        :mode: str, Choose the checking method,
+            * 'eval' -> check eigenvalues.
+            * 'pauli' -> check pauli components, it is only valid for 2 band system.
 
         :smearing: The smearing factor.
     '''
-    tlist=chain.tlist
-    elist=chain.elist
-    nband=chain.nband
-    t0=chain.t0
-    nz=chain.elist.shape[1]
-    is_scalar=ndim(elist)==2
+    nband=chains[0].nband
+    nz=len(chains)
     print 'Recovering Spectrum ...'
     dlv=[]
     for iz in xrange(nz):
         print 'Recovering spectrum for %s-th z number.'%iz
-        el=elist[:,iz]
-        tl=concatenate([t0[iz][newaxis,...],tlist[:,iz]],axis=0)
+        chain=chains[iz]
+        el=chain.elist
+        tl=concatenate([chain.t0[newaxis,...],chain.tlist],axis=0)
         dl=[]
         for w in wlist:
             sigma=0
@@ -119,7 +106,7 @@ def check_spec(chain,rhofunc,wlist,mode='eval',smearing=1.):
             dl.append(1j*(sigma-sigma.T.conj())/2./pi)
         dlv.append(dl)
     dlv=mean(dlv,axis=0)
-    if is_scalar:
+    if chain.is_scalar:
         dlv=dlv
         nplt=1
     elif nband==2 and mode=='pauli':
@@ -130,7 +117,7 @@ def check_spec(chain,rhofunc,wlist,mode='eval',smearing=1.):
         nplt=chain.nband
     dlv0=array([rhofunc(w) for w in wlist])
     dlv=dlv.real
-    if is_scalar:
+    if chain.is_scalar:
         dlv=dlv[:,newaxis]
     colormap=cm.rainbow(linspace(0,0.8,nplt))
     if mode=='pauli':
