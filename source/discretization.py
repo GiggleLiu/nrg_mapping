@@ -6,16 +6,16 @@ checking method is also provided.
 from numpy import *
 from matplotlib.pyplot import *
 from matplotlib import cm
-#from scipy.interpolate import InterpolatedUnivariateSpline,interp1d
+from scipy.interpolate import InterpolatedUnivariateSpline,interp1d
 from scipy.integrate import quadrature,cumtrapz,trapz,simps,quad
 from numpy.linalg import eigh,inv,eigvalsh,norm
-import pdb,time
+import pdb,time,warnings
 
 from nrg_setting import DATA_FOLDER
 from utils import sx,sy,sz,s2vec,H2G,plot_pauli_components
 from discmodel import DiscModel
 from ticklib import get_ticker
-from utils import exinterp as interp1d
+#from utils import exinterp as interp1d
 
 __all__=['get_wlist','DiscHandler','SingleBandDiscHandler','MultiBandDiscHandler',\
         'quick_map','check_disc']
@@ -25,7 +25,7 @@ def get_wlist(w0,Nw,mesh_type,D=1,Gap=0):
     A well defined mesh can make the rho(w) more accurate.
 
     Parameters:
-        :w0: float, The starting w for wlist for `log` and `sclog` type wlist..
+        :w0: float, The starting w for wlist for `log` and `sclog` type wlist, it must be smaller than lowest energy scale!
         :Nw: integer, The number of samples in each branch.
         :mesh_type: string, The type of wlist.
 
@@ -50,7 +50,8 @@ def get_wlist(w0,Nw,mesh_type,D=1,Gap=0):
         wlist=[logspace(log(w0),log(-D[0]+Gap[0]),Nw,base=e)-Gap[0],logspace(log(w0),log(D[1]-Gap[1]),Nw,base=e)+Gap[1]]
     if (wlist[0][1]-wlist[0][0])==0 or (wlist[1][1]-wlist[1][0])==0:
         raise Exception('Precision Error, Reduce your scaling factor or scaling level!')
-    return concatenate([-wlist[0][::-1],wlist[1]])
+    #add zeros
+    return concatenate([-wlist[0][::-1],array([Gap[0]-1e-30,Gap[1]+1e-30]),wlist[1]])
 
 class DiscHandler(object):
     '''
@@ -315,7 +316,13 @@ def quick_map(rhofunc,wlist,N,z=1.,Nx=500000,tick_params=None,autofix=1e-5):
 
     t0=time.time()
     print 'Start discretization. Using %s discretization points(ticks).'%tick_type
-    tickers=[get_ticker(tick_type,r=r,Lambda=Lambda,D=abs(D[sgn]),Gap=abs(Gap[sgn]),wlist=wlists[sgn],rholist=weights[sgn]) for sgn in branches]
+    tickers=[get_ticker(tick_type,r=r,Lambda=Lambda,D=abs(D[sgn]),Gap=abs(Gap[sgn]),\
+            wlist=wlists[sgn],rholist=weights[sgn]) for sgn in branches]
+
+    #check for precision
+    if -wlist[wlist<0].max()>tickers[0](N+1) or wlist[wlist>0].min()>tickers[1](N+1):
+        warnings.warn('Precision Warning, the minimum energy scale `w0` is \
+supposed to be smaller than %s.'%min(tickers[1](N+1),tickers[0](N+1)))
 
     if is_scalar:
         handler=SingleBandDiscHandler(wlist=wlist,rholist=rholist,tickers=tickers)

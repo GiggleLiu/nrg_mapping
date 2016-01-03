@@ -8,7 +8,7 @@ sy=array([[0,-1j],[1j,0]])
 sz=array([[1,0],[0,-1]])
 
 #defined the hybridization function
-wlist=get_wlist(Nw=5000,mesh_type='log',w0=1e-9,D=1.)
+wlist=get_wlist(Nw=5000,mesh_type='log',w0=1e-12,D=1.)
 rhofunc=lambda w:identity(2)+0.4*sx+0.5*(0.1+w**2)*sy
 
 #map it to a sun model

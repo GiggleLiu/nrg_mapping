@@ -20,14 +20,14 @@ def run():
     Lambda=1.8
     D=[-1,1.5]
     rhofunc=lambda w:Gamma*abs(w)
-    wlist=get_wlist(w0=1e-8,Nw=10000,mesh_type='log',Gap=0,D=D)
+    wlist=get_wlist(w0=1e-12,Nw=10000,mesh_type='log',Gap=0,D=D)
     rholist=rhofunc(wlist)
 
     #create the discretized model
     N=33      #the chain length
     nz=50      #the number of twisting parameter z
     z=linspace(0.5/nz,1-0.5/nz,nz)
-    tick_type='adaptive'
+    tick_type='log'
 
     print '''Start mapping the hybridization function into a discrete set of baths.
 %s sites for each(pos/neg) branch

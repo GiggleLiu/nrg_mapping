@@ -22,8 +22,8 @@ def run():
     D0=2.
     Gap=0.3
     D=sqrt(D0**2+Gap**2)
-    wlist=get_wlist(w0=1e-8,Nw=10000,mesh_type='sclog',Gap=Gap,D=D)
-    rhofunc=get_hybri_skew(Gap,Gamma,D=D,eta=1e-15,skew=0.3)
+    wlist=get_wlist(w0=1e-12,Nw=10000,mesh_type='sclog',Gap=Gap,D=D)
+    rhofunc=get_hybri_skew(Gap,Gamma,D=D,eta=1e-12,skew=0.3)
     rholist=array([rhofunc(w) for w in wlist])
 
     #create the discretized model

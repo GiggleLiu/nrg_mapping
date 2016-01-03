@@ -130,6 +130,8 @@ class MapTest():
             offset_y=i
             ticker=get_ticker(tick_type,D=self.D[1],N=N,Lambda=Lambda,Gap=self.Gap,wlist=wlist[pmask],rholist=rholist)
             plt=scatter(ticker(arange(2,2+N+1)),offset_y*ones(N+1),edgecolor='none',color=colors[i],label=tick_type)
+            #consistancy check
+            assert_allclose(ticker(arange(1,N+2)),[ticker(i) for i in xrange(1,N+2)])
         legend(loc=3)
 
     @dec.slow

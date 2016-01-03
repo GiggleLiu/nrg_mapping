@@ -22,7 +22,7 @@ def run():
     Lambda=1.8
     
     D=[-1.,0.5]             #the energy window.
-    wlist=get_wlist(w0=1e-8,Nw=10000,mesh_type='log',Gap=0,D=D)
+    wlist=get_wlist(w0=1e-12,Nw=10000,mesh_type='log',Gap=0,D=D)
     #rhofunc=lambda w:identity(4)+0.3*w*Gmat[0]+0.3*w**2*Gmat[2] #the case with degeneracy
     rhofunc=lambda w:identity(4)+0.3*w*Gmat[0]+0.3*w**2*Gmat[2]+0.1*kron(sz,sz)     #the case without degeneracy.
 
