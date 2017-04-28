@@ -159,7 +159,7 @@ def load_discmodel(file_prefix):
     negfile='%s.neg.dat'%(file_prefix)
     posfile='%s.pos.dat'%(file_prefix)
     z=loadtxt(zfile)
-    nz=len(z)
+    nz=len(atleast_1d(z))
     negdata=loadtxt(negfile)
     posdata=loadtxt(posfile)
     if ndim(negdata)==1:

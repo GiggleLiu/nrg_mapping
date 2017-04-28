@@ -9,7 +9,7 @@ from matplotlib import cm
 from matplotlib.pyplot import *
 import pdb
 
-__all__=['sx','sy','sz','Gmat','plot_pauli_components','H2G','s2vec','vec2s']
+__all__=['sx','sy','sz','Gmat','plot_pauli_components','H2G','s2vec','vec2s','get_wlist']
 
 ############################ DEFINITIONS ##############################
 # pauli spin
@@ -147,4 +147,39 @@ def exinterp(xlist,ylist):
             return concatenate([syl,myl,lyl],axis=0)
     return pointwise
 
+def get_wlist(w0,Nw,mesh_type,D=1,Gap=0):
+    '''
+    A well defined mesh can make the rho(w) more accurate.
 
+    Parameters:
+        :w0: float, The starting w for wlist for `log` and `sclog` type wlist, it must be smaller than lowest energy scale!
+        :Nw: integer/len-2 tuple, The number of samples in each branch.
+        :mesh_type: string, The type of wlist.
+
+            * `linear` -> linear mesh.
+            * `log` -> log mesh.
+            * `sclog` -> log mesh suited for superconductors.
+        :D: Interger/len-2 tuple, the band interval.
+        :Gap: Interger/len-2 tuple, the gap interval.
+
+    Return:
+        1D array, the frequency space.
+    '''
+    assert(mesh_type=='linear' or mesh_type=='log' or mesh_type=='sclog')
+    if ndim(Gap)==0: Gap=[-Gap,Gap]
+    if ndim(D)==0: D=[-D,D]
+    if ndim(Nw)==0: Nw=[Nw/2,Nw-Nw/2]
+
+    if mesh_type=='linear':
+        wlist=[linspace(-Gap[0],-D[0],Nw[0]),linspace(Gap[1],D[1],Nw[1])]
+        return concatenate([-wlist[0][::-1],wlist[1]])
+    elif mesh_type=='log':
+        wlist=[logspace(log(w0)/log(10),log(-D[0]+Gap[0])/log(10),Nw[0]-1)-Gap[0],logspace(log(w0)/log(10),log(D[1]-Gap[1])/log(10),Nw[1]-1)+Gap[1]]
+        #add zeros
+        return concatenate([-wlist[0][::-1],array([Gap[0]-1e-30,Gap[1]+1e-30]),wlist[1]])
+    elif mesh_type=='sclog':
+        wlist=[logspace(log(w0),log(-D[0]+Gap[0]),Nw[0]-1,base=e)-Gap[0],logspace(log(w0),log(D[1]-Gap[1]),Nw[1]-1,base=e)+Gap[1]]
+        #add zeros
+        return concatenate([-wlist[0][::-1],array([Gap[0]-1e-30,Gap[1]+1e-30]),wlist[1]])
+    if (wlist[0][1]-wlist[0][0])==0 or (wlist[1][1]-wlist[1][0])==0:
+        raise Exception('Precision Error, Reduce your scaling factor or scaling level!')

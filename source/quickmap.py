@@ -9,9 +9,9 @@ from chainmapper import map2chain
 from scipy.interpolate import interp1d
 from configobj import ConfigObj
 from validate import Validator
-import sys,pdb
+import sys,pdb,os
 
-__all__=['quickmap']
+__all__=['quickmap','run_config']
 
 def quickmap(wlist,rhofunc,Lambda=2.0,nsite=25,nz=1,tick_type='adaptive'):
     '''
@@ -39,13 +39,10 @@ def quickmap(wlist,rhofunc,Lambda=2.0,nsite=25,nz=1,tick_type='adaptive'):
     print 'Done'
     return chains
 
-def run_config():
+def run_config(config_file):
     '''Run according to the configuration file `config.py`.'''
-    if len(sys.argv)>1:
-        config_file=sys.argv[1]
-    else:
-        config_file='config-sample.ini'
-    config=ConfigObj(config_file,configspec='config-spec.ini',stringify=True)
+    specfile=os.path.join(os.path.dirname(__file__),'config-spec.ini')
+    config=ConfigObj(config_file,configspec=specfile,stringify=True)
     validator = Validator()
     result = config.validate(validator,preserve_errors=True)
     if result!=True:
@@ -56,28 +53,21 @@ def run_config():
     file_prefix=config['global']['data_folder'].strip('/')+'/'+config['global']['data_token']
 
     #load hybridization function and do elementwise interpolation
-    data=loadtxt(hybri_config['hybridization_func_file'])
-    wlist=data[:,0]
-    rholist=data[:,1:]
-    if rholist.shape[1]>1:
-        hdim=int(sqrt(rholist.shape[1]))
-        rholist=rholist.reshape([rholist.shape[0],hdim,hdim])
-    else:
-        rholist=rholist[:,0]
-    #check and modify wlist
-    if any(diff(wlist)<0):
-        raise ValueError('omega not monotonious!')
+    hybri_file=hybri_config['hybridization_func_file']
+    is_complex=hybri_file.split('.')[-2]=='complex'
+    wlist,rholist=_load_hybri(hybri_file,is_complex)
     rhofunc=interp1d(wlist,rholist,axis=0)
 
     #
     gap_neg=hybri_config['gap_neg']
     gap_pos=hybri_config['gap_pos']
+    min_scale=hybri_config['min_scale']
     posmask=wlist>0
     wpos,wneg=wlist[posmask],wlist[~posmask]
-    if wpos.min()>gap_pos+1e-15:
-        wpos=append([gap_pos+1e-15],wpos)
-    if wneg.max()<-gap_neg-1e-15:
-        wneg=append(wneg,[-gap_neg-1e-15])
+    if wpos.min()>gap_pos+min_scale:
+        wpos=append([gap_pos+min_scale],wpos)
+    if wneg.max()<-gap_neg-min_scale:
+        wneg=append(wneg,[-gap_neg-min_scale])
     wlist=append(wneg,wpos)
     
     #discretize to star model
@@ -100,7 +90,30 @@ Mapping complete!
 > To use them in python, check @chain.load_chain.
 > To use them in other programming language,
   please read the description in method @chain.Chain.save.
-%s'''%('='*40,','.join([str(z) for z in zs]),file_prefix,'='*40)
+%s'''%('='*40,file_prefix,','.join([str(z) for z in zs]),'='*40)
+
+
+def _load_hybri(hybri_file,is_complex):
+    data=loadtxt(hybri_file)
+    wlist=data[:,0]
+    rholist=data[:,1:]
+    if is_complex:
+        hdim=int(sqrt(rholist.shape[1]/2))
+        rholist=rholist.reshape([-1,2]).view('complex128')
+    else:
+        hdim=int(sqrt(rholist.shape[1]))
+    if hdim>1:
+        rholist=rholist.reshape([len(wlist),hdim,hdim])
+    else:
+        rholist=rholist[:,0]
+    #check and modify wlist
+    if any(diff(wlist)<0):
+        raise ValueError('omega not monotonious!')
+    return wlist,rholist
 
 if __name__=='__main__':
-    run_config()
+    if len(sys.argv)>1:
+        config_file=sys.argv[1]
+    else:
+        config_file='config-sample.ini'
+    run_config(config_file)
