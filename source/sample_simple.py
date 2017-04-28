@@ -16,7 +16,7 @@ discmodel=quick_map(wlist=wlist,rhofunc=rhofunc,N=35,z=linspace(0.05,0.95,10),\
         tick_params={'tick_type':'adaptive','Lambda':2.})[1]
 
 #map it to a Wilson chain
-chains=map2chain(discmodel,prec=3000)
+chains=map2chain(discmodel)
 
 #do some checking
 #check the sun model

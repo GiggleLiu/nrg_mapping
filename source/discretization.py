@@ -11,7 +11,6 @@ from scipy.integrate import quadrature,cumtrapz,trapz,simps,quad
 from numpy.linalg import eigh,inv,eigvalsh,norm
 import pdb,time,warnings
 
-from nrg_setting import DATA_FOLDER
 from utils import sx,sy,sz,s2vec,H2G,plot_pauli_components
 from discmodel import DiscModel
 from ticklib import get_ticker
@@ -26,7 +25,7 @@ def get_wlist(w0,Nw,mesh_type,D=1,Gap=0):
 
     Parameters:
         :w0: float, The starting w for wlist for `log` and `sclog` type wlist, it must be smaller than lowest energy scale!
-        :Nw: integer, The number of samples in each branch.
+        :Nw: integer/len-2 tuple, The number of samples in each branch.
         :mesh_type: string, The type of wlist.
 
             * `linear` -> linear mesh.
@@ -41,17 +40,21 @@ def get_wlist(w0,Nw,mesh_type,D=1,Gap=0):
     assert(mesh_type=='linear' or mesh_type=='log' or mesh_type=='sclog')
     if ndim(Gap)==0: Gap=[-Gap,Gap]
     if ndim(D)==0: D=[-D,D]
+    if ndim(Nw)==0: Nw=[Nw/2,Nw-Nw/2]
 
     if mesh_type=='linear':
-        wlist=[linspace(-Gap[0],-D[0],Nw),linspace(Gap[1],D[1],Nw)]
+        wlist=[linspace(-Gap[0],-D[0],Nw[0]),linspace(Gap[1],D[1],Nw[1])]
+        return concatenate([-wlist[0][::-1],wlist[1]])
     elif mesh_type=='log':
-        wlist=[logspace(log(w0)/log(10),log(-D[0]+Gap[0])/log(10),Nw)-Gap[0],logspace(log(w0)/log(10),log(D[1]-Gap[1])/log(10),Nw)+Gap[1]]
+        wlist=[logspace(log(w0)/log(10),log(-D[0]+Gap[0])/log(10),Nw[0]-1)-Gap[0],logspace(log(w0)/log(10),log(D[1]-Gap[1])/log(10),Nw[1]-1)+Gap[1]]
+        #add zeros
+        return concatenate([-wlist[0][::-1],array([Gap[0]-1e-30,Gap[1]+1e-30]),wlist[1]])
     elif mesh_type=='sclog':
-        wlist=[logspace(log(w0),log(-D[0]+Gap[0]),Nw,base=e)-Gap[0],logspace(log(w0),log(D[1]-Gap[1]),Nw,base=e)+Gap[1]]
+        wlist=[logspace(log(w0),log(-D[0]+Gap[0]),Nw[0]-1,base=e)-Gap[0],logspace(log(w0),log(D[1]-Gap[1]),Nw[1]-1,base=e)+Gap[1]]
+        #add zeros
+        return concatenate([-wlist[0][::-1],array([Gap[0]-1e-30,Gap[1]+1e-30]),wlist[1]])
     if (wlist[0][1]-wlist[0][0])==0 or (wlist[1][1]-wlist[1][0])==0:
         raise Exception('Precision Error, Reduce your scaling factor or scaling level!')
-    #add zeros
-    return concatenate([-wlist[0][::-1],array([Gap[0]-1e-30,Gap[1]+1e-30]),wlist[1]])
 
 class DiscHandler(object):
     '''
@@ -128,8 +131,13 @@ class SingleBandDiscHandler(DiscHandler):
         #get the energy function
         xlist=linspace(1,xmax,Nx)
         iRfunc=interp1d(RL,wlist)
-        RRlist=append([0],cumtrapz(Rfunc(ticker(xlist)),xlist))
-        RRfunc=interp1d(xlist,RRlist)
+        #RRlist=append([0],cumtrapz(Rfunc(ticker(xlist)),xlist))
+        #RRfunc=interp1d(xlist,RRlist)
+        #Efunc=lambda x:(2*sgn-1)*(iRfunc(RRfunc(x+1)-RRfunc(x)))
+
+        #change the integration order to avoid big+small.
+        RRlist=append([0],cumtrapz(Rfunc(ticker(xlist[::-1])),xlist[::-1]))
+        RRfunc=interp1d(xlist,RRlist[::-1])
         Efunc=lambda x:(2*sgn-1)*(iRfunc(RRfunc(x+1)-RRfunc(x)))
 
         return Tfunc,Efunc
@@ -267,12 +275,12 @@ def quick_map(rhofunc,wlist,N,z=1.,Nx=500000,tick_params=None,autofix=1e-5):
     Perform quick mapping(All in one suit!) for nband x nband hybridization matrix.
 
     Parameters:
-        :rhofunc: function, The hybridization function.
-        :wlist: 1D array, the frequency space holding this hybridization function.
-        :N: integer, The number of discrete sites for each z number.
+        :rhofunc: function, hybridization function.
+        :wlist: 1D array, frequency space holding this hybridization function.
+        :N: integer, number of discrete sites for each z number.
         :z: float/1D array, twisting parameters.
-        :Nx: integer, The number of samples for integration over rho(epsilon(x)).
-        :tick_params: dict, the parameters for ticks, the following keys could be available,
+        :Nx: integer, number of samples for integration over rho(epsilon(x)).
+        :tick_params: dict, parameters for ticks, the following keys could be available,
 
             * `tick_type` -> The type of ticks
                 'log': logarithmic tick,
@@ -281,9 +289,9 @@ def quick_map(rhofunc,wlist,N,z=1.,Nx=500000,tick_params=None,autofix=1e-5):
                 'linear': linear ticks.
                 'adaptive_linear': adaptive linear ticks.
             * `r` -> Adaptive ratio for `adaptive`/`adaptive_linear` ticks(default: 1.0).
-            * `wn` -> The typical frequency to achieve the best fit for `ed` ticks(default: pi/200).
-            * `Lambda` -> The scaling factor for `log`, `adaptive`, `sclog` ticks(default: 2.0).
-            * `Gap` -> The gap region of the hybridization function, it is used in discretization schemes
+            * `wn` -> typical frequency to achieve the best fit for `ed` ticks(default: pi/200).
+            * `Lambda` -> scaling factor for `log`, `adaptive`, `sclog` ticks(default: 2.0).
+            * `Gap` -> gap region of the hybridization function, it is used in discretization schemes
             that do not allow zeros in hybridization function: `log`, `sclog`, `linear`(default: 0).
 
         :autofix: float, Automatically fix the occational small negative eigenvalue(>=autofix) of rho(w) to 0.
@@ -294,7 +302,7 @@ def quick_map(rhofunc,wlist,N,z=1.,Nx=500000,tick_params=None,autofix=1e-5):
     D=[wlist[0],wlist[-1]]
     z=array(z)
     if tick_params is None: tick_params={}
-    assert(all(z>0) and all(z<=1))
+    if not (all(z>0) and all(z<=1)): raise ValueError('twisting parameter out of range!')
     tick_type=tick_params.get('tick_type','adaptive')
     r=tick_params.get('r',1.)
     wn=tick_params.get('wn',pi/200)
@@ -311,7 +319,7 @@ def quick_map(rhofunc,wlist,N,z=1.,Nx=500000,tick_params=None,autofix=1e-5):
         weights=rholist
     else:
         is_scalar=False
-        weights=(rholist*rholist.swapaxes(1,2)).sum(axis=(1,2))
+        weights=(rholist*rholist.swapaxes(1,2)).sum(axis=(1,2)).real
     weights=[weights[~pmask][::-1],weights[pmask]]
 
     t0=time.time()

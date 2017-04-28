@@ -58,9 +58,11 @@ class LogTicker(Ticker):
             else:
                 return Lambda**(2-x)*(D-Gap)+Gap
         else:
-            inds=searchsorted(x,2)
-            xs,xm=split(x,(inds,))
-            return concatenate([D*ones(len(xs)),Lambda**(2-xm)*(D-Gap)+Gap])
+            res=D*ones(len(x),dtype='float64')
+            fit_mask=x>2
+            res[fit_mask]=Lambda**(2-x[fit_mask])*(D-Gap)+Gap
+            return res
+            #return concatenate([D*ones(len(xs)),Lambda**(2-xm)*(D-Gap)+Gap])
 
 class ScLogTicker(Ticker):
     '''
@@ -94,9 +96,13 @@ class ScLogTicker(Ticker):
             else:
                 return sqrt((Lambda**(2-x)*D0)**2+Gap**2)
         else:
-            inds=searchsorted(x,2)
-            xs,xm=split(x,(inds,))
-            return concatenate([D*ones(len(xs)),sqrt((Lambda**(2-xm)*D0)**2+Gap**2)])
+            #inds=searchsorted(x,2)
+            #xs,xm=split(x,(inds,))
+            #return concatenate([D*ones(len(xs)),sqrt((Lambda**(2-xm)*D0)**2+Gap**2)])
+            res=D*ones(len(x),dtype='float64')
+            fit_mask=x>2
+            res[fit_mask]=sqrt((Lambda**(2-x[fit_mask])*D0)**2+Gap**2)
+            return res
 
 class LinearTicker(Ticker):
     '''
@@ -165,9 +171,12 @@ class AdaptiveTickerBase(Ticker):
             else:
                 return iRfunc(RD*self.xf(x))
         else:
-            inds=searchsorted(x,2)
-            xs,xm=split(x,(inds,))
-            res=concatenate([D*ones(len(xs)),iRfunc(RD*self.xf(xm))])
+            #inds=searchsorted(x,2)
+            #xs,xm=split(x,(inds,))
+            #res=concatenate([D*ones(len(xs)),iRfunc(RD*self.xf(xm))])
+            res=D*ones(len(x),dtype='float64')
+            fit_mask=x>2
+            res[fit_mask]=iRfunc(RD*self.xf(x[fit_mask]))
             return res
 
 class AdaptiveLogTicker(AdaptiveTickerBase):

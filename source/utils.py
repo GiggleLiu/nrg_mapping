@@ -7,41 +7,19 @@ from scipy.linalg import eigh,norm,inv
 from scipy.interpolate import interp1d
 from matplotlib import cm
 from matplotlib.pyplot import *
-import gmpy2,pdb
+import pdb
 
-__all__=['sx','sy','sz','Gmat','eigh_pauliv_npy','plot_pauli_components','mpconj','mpqr','H2G','s2vec','vec2s','sqrth2']
+__all__=['sx','sy','sz','Gmat','plot_pauli_components','H2G','s2vec','vec2s']
 
 ############################ DEFINITIONS ##############################
 # pauli spin
 sx = array([[0, 1],[ 1, 0]])
 sy = array([[0, -1j],[1j, 0]])
 sz = array([[1, 0],[0, -1]])
+#Clifford algebra
 Gmat=array([kron(sz,sx),kron(identity(2),sy),kron(sx,sx),kron(sy,sx),kron(identity(2),sz)])
 
 ############################ FUNCTIONS ##############################
-
-#Get the conjugate of matrix A(to avoid a bug of gmpy2.mpc.conj).
-mpconj=vectorize(lambda x:gmpy2.mpc(x.real,-x.imag))
-
-def eigh_pauliv_npy(a0,a1,a2,a3):
-    '''
-    eigen values for pauli vectors - numpy version.
-
-    Parameters:
-        :a0/a1/a2/a3: Pauli components.
-
-    Return:
-        Tuple of (eval,evecs), the eigenvalue decomposition of A.
-    '''
-    e0=sqrt(a1**2+a2**2+a3**2)
-    evals=array([a0-e0,a0+e0])
-    if abs(a1+a2*1j)<1e-50:
-        evecs=array([[0,1],[1,0j]])
-    else:
-        evecs=array([[(a3-e0)/(a1+a2*1j),1],[(a3+e0)/(a1+a2*1j),1]])
-    for i in xrange(2):
-        evecs[i]=evecs[i]/norm(evecs[i])
-    return evals,evecs.T
 
 def s2vec(s):
     '''
@@ -105,28 +83,6 @@ def H2G(h,w,tp='r',geta=1e-2,sigma=None):
     else:
         return 1./(z-h)
 
-def mpqr(A):
-    '''
-    Analytically, get the QR decomposition of a matrix.
-
-    Parameters:
-        :A: The matrix.
-
-    Return:
-        (Q,R), where QR=A, Q is orthogonal by columns, and R is upper triangular.
-    '''
-    ndim=A.shape[1]
-    Q=zeros([A.shape[0],0])
-    csqrt=vectorize(gmpy2.sqrt)
-    for i in xrange(ndim):
-        ui=A[:,i:i+1]
-        if i>0:
-            ui=ui-dot(Q,dot(mpconj(Q.T),ui))
-        ui=ui/csqrt(dot(mpconj(ui.T),ui))
-        Q=concatenate([Q,ui],axis=-1)
-    R=dot(mpconj(Q.T),A)
-    return Q,R
-
 def plot_pauli_components(x,y,method='plot',ax=None,label=r'\sigma',**kwargs):
     '''
     Plot data by pauli components.
@@ -156,90 +112,6 @@ def plot_pauli_components(x,y,method='plot',ax=None,label=r'\sigma',**kwargs):
             plts.append(scatter(x,yv[:,i],edgecolors=colormap[i],facecolors='none',**kwargs))
     legend(plts,[r'$%s_%s$'%(label,sub) for sub in subscripts])
     return plts
-
-def sqrth2(A):
-    '''
-    analytically, get square root of a hermion matrix.
-
-    Parameters:
-        :A: The matrix.
-    Return:
-        2D array, The matrix squareroot of A.
-    '''
-    if len(A)!=2:
-        raise Exception('Error','Matrix Dimension Error!')
-    #first, diagonalize it
-    evals,evecs=eigh2(A)
-    gmsqrt=gmpy2.sqrt
-    evals=array([gmsqrt(ev) for ev in evals])
-    #recombine it
-    v1=evecs[:,0:1]
-    v1h=array([[v1[i,0].real-v1[i,0].imag*1j for i in xrange(2)]])
-    v2=evecs[:,1:2]
-    v2h=array([[v2[i,0].real-v2[i,0].imag*1j for i in xrange(2)]])
-    res=evals[0]*dot(v1,v1h)+evals[1]*dot(v2,v2h)
-    return res
-
-def invh2(A):
-    '''
-    analytically, get inversion of a 2 dimensional hermion matrix.
-
-    Parameters:
-        :A: the matrix.
-    Return:
-        2D array, The inversion of A.
-    '''
-    if len(A)!=2:
-        raise Exception('Error','Matrix Dimension Error!')
-    a0=(A[0,0]+A[1,1])/2
-    a1=(A[0,1]+A[1,0])/2
-    a2=(A[0,1]-A[1,0])*1j/2
-    a3=(A[0,0]-A[1,1])/2
-    N=a1**2+a2**2+a3**2-a0**2
-    return array([[-a0+a3,a1-a2*1j],[a1+a2*1j,-a0-a3]])/N
-
-def eigh2(A):
-    '''
-    analytically, get eigenvalues and eigenvactors of a 2 dimensional hermion matrix.
-
-    Parameters:
-        :A: The matrix.
-
-    Return:
-        Tuple of (eval,evecs), the eigenvalue decomposition of A.
-    '''
-    if len(A)!=2:
-        raise Exception('Error','Matrix Dimension Error!')
-    a0=(A[0,0]+A[1,1])/2.
-    a1=(A[0,1]+A[1,0])/2.
-    a2=(A[0,1]-A[1,0])*1j/2.
-    a3=(A[0,0]-A[1,1])/2.
-    if A.dtype==object:
-        return eigh_pauliv_mpc(a0,a1,a2,a3)
-    else:
-        return eigh_pauliv_npy(a0,a1,a2,a3)
-
-def eigh_pauliv_mpc(a0,a1,a2,a3):
-    '''
-    eigen values for pauli vectors - gmpy version.
-
-    Parameters:
-        a0/a1/a2/a3: Pauli vectors.
-    Return:
-        Tuple of (eval,evecs), the eigenvalue decomposition of A.
-    '''
-    gmsqrt=gmpy2.sqrt
-    gmnorm=gmpy2.norm
-    e0=gmsqrt(a1**2+a2**2+a3**2)
-    evals=array([a0-e0,a0+e0])
-    if gmnorm(a1+a2*1j)<1e-50:
-        evecs=array([[gmpy2.mpc(0),gmpy2.mpc(1)],[gmpy2.mpc(1),gmpy2.mpc(0)]])
-    else:
-        evecs=array([[(a3-e0)/(a1+a2*1j),gmpy2.mpc(1)],[(a3+e0)/(a1+a2*1j),gmpy2.mpc(1)]])
-    for i in xrange(2):
-        #evecs[i]=evecs[i]/gmsqrt(sum(gmnorm(evecs[i])))
-        evecs[i]=evecs[i]/gmsqrt(gmnorm(evecs[i,0])+gmnorm(evecs[i,1]))
-    return evals,evecs.T
 
 def exinterp(xlist,ylist):
     '''

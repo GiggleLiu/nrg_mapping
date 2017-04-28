@@ -5,71 +5,61 @@ checking method is also provided.
 
 from numpy import *
 from scipy.sparse import block_diag
-from scipy.linalg import eigvalsh,norm
+from scipy.linalg import eigvalsh,norm,qr
 from matplotlib.pyplot import *
 from matplotlib import cm
-import gmpy2,pdb
+import pdb
 
-from utils import H2G,s2vec,mpqr
-from tridiagonalize import tridiagonalize_qr,tridiagonalize
+from utils import H2G,s2vec
+from tridiagonalize import *
 from chain import Chain
-from nrg_setting import DATA_FOLDER
 
-__all__=['map2chain','check_spec']
+__all__=['map2chain','check_spec','show_scaling']
 
-#MPI setting
-try:
-    from mpi4py import MPI
-    COMM=MPI.COMM_WORLD
-    SIZE=COMM.Get_size()
-    RANK=COMM.Get_rank()
-except:
-    COMM=None
-    SIZE=1
-    RANK=0
-
-def map2chain(model,prec=5000):
+def map2chain(model,nsite=None,normalize_method='qr'):
     '''
     Map discretized model to a chain model using lanczos method.
 
     Parameters:
-        :model: The discretized model(<DiscModel> instance).
-        :prec: The precision(by bit instead of digit),
-        :the higher, the slower, 2000 to 6000 is recommended.
+        :model: <DiscModel>, the discretized model(<DiscModel> instance).
+        :nsite: int, the number of site, default value is the half size of the bath to avoid symmetry cutoff.
+        :normalize_method: str, the normalization strategy for block lanczos.
+
+            * 'qr': QR decomposition, will get upper triangular hoppings.
+            * 'sqrtm': Matrix squareroot, will get more symmetric hoppings.
+            * 'mpqr': High precision version of 'qr'.
 
     Return:
         A <Chain> instance.
     '''
     Elist,Tlist=model.Elist,model.Tlist
-    nsite=model.N_pos
+    if nsite is None: nsite=model.N_pos
     is_scalar=model.is_scalar
 
     #first, orthogonalize Tlist to get the first site.
-    ntask=(model.nz-1)/SIZE+1
     cl=[]
     for i in xrange(model.nz):
-        if i/ntask==RANK:
-            ti=Tlist[:,i]  #unitary vector
-            ti=ti.reshape([-1,model.nband])
-            qq,t0=mpqr(ti)
+        ti=Tlist[:,i]  #unitary vector
+        ti=ti.reshape([-1,model.nband])
+        qq,t0=qr(ti,mode='economic')
 
-            print 'Mapping to chain through lanczos tridiagonalization for z-number %s ...'%model.z[i]
-            #the m should not be greater than scale length-N, otherwise artificial `zero modes` will take place, but how does this happen?
-            eml=Elist[:,i]
-            #multi-band lanczos,
-            H=block_diag(eml)
-            if is_scalar:
-                data,offset=tridiagonalize(H,q=qq[:,0],m=nsite,prec=prec)  #we need to perform N+1 recursion to get N sub-diagonal terms.
-                chain=Chain(t0[0,0],data[1],data[2])
+        print 'Mapping to chain through lanczos tridiagonalization for z-number %s ...'%model.z[i]
+        #the m should not be greater than scale length-N, otherwise artificial `zero modes` will take place, but how does this happen?
+        eml=Elist[:,i]
+        #multi-band lanczos,
+        H=block_diag(eml)
+        if is_scalar:
+            data,offset=tridiagonalize_mp(H,q=qq[:,0],m=nsite)
+            chain=Chain(t0[0,0],data[1],data[2])
+        else:
+            if normalize_method=='sqrtm':
+                data,offset=tridiagonalize_sqrtm(H,q=qq.reshape([-1,model.nband]),m=nsite)
+            if normalize_method=='mpqr':
+                data,offset=tridiagonalize_mpqr(H,q=qq.reshape([-1,model.nband]),m=nsite)
             else:
-                data,offset=tridiagonalize_qr(H,q=qq.reshape([-1,model.nband]),m=nsite,prec=prec)  #we need to perform N+1 recursion to get N sub-diagonal terms.
-                chain=Chain(t0,data[1],data[2])
-            cl.append(chain)
-    if SIZE>1:
-        cl=COMM.gather(cl,root=0)
-        if RANK==0:
-            cl=concatenate(cl,axis=0)
-        cl=COMM.bcast(cl,root=0)
+                data,offset=tridiagonalize_qr(H,q=qq.reshape([-1,model.nband]),m=nsite)
+            chain=Chain(t0,data[1],data[0])
+        cl.append(chain)
     return cl
 
 def check_spec(chains,rhofunc,wlist,mode='eval',smearing=1.):
@@ -139,3 +129,14 @@ def check_spec(chains,rhofunc,wlist,mode='eval',smearing=1.):
         legend(plts[::2],[r"$\rho_%s$"%i for i in xrange(chain.nband)]+[r"$\rho''_%s$"%i for i in xrange(chain.nband)],ncol=2)
     xlabel(r'$\omega$',fontsize=16)
     xticks([-1,0,1],['-D',0,'D'],fontsize=16)
+
+def show_scaling(chain,logy=True):
+    '''
+    Check the scaling of chain.
+    '''
+    tlist=concatenate([chain.t0[newaxis,...],chain.tlist])
+    ydata=([norm(t) for t in tlist])
+    if logy: ydata=log(ydata)
+    plot(arange(len(tlist)),ydata)
+    xlabel('site')
+    ylabel('log(|t|)' if logy else '|t|')

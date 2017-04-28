@@ -1,9 +1,10 @@
 '''
 The Discretized model, or the sun model.
 '''
-from numpy import *
 
-from nrg_setting import DATA_FOLDER
+from numpy import *
+from scipy import sparse as sps
+import pdb
 
 __all__=['DiscModel','load_discmodel']
 
@@ -86,12 +87,28 @@ class DiscModel(object):
         '''The list of on-site energies.'''
         return concatenate([self.Tlist_neg[::-1],self.Tlist_pos],axis=0)
 
-    def save(self,token):
+    def get_H0(self,e0,iz):
+        '''Get the hamiltonian.'''
+        N=self.N+1
+        mat=ndarray((N,N),dtype='O')
+        elist,tlist=self.Elist[:,iz],self.Tlist[:,iz]
+
+        #fill datas
+        mat[0,0]=e0
+        for i in xrange(1,N):
+            ti=tlist[i-1]
+            mat[i,i]=elist[i-1]
+            mat[0,i]=ti.T.conj()
+            mat[i,0]=ti
+
+        return sps.bmat(mat).toarray()
+
+    def save(self,file_prefix):
         '''
         Save data.
 
         Parameters:
-            :token: The target filename token.
+            :file_prefix: The target filename prefix.
 
         **Note:**
         For the scalar model mapped from SingleBandDiscHandler, with z=[0.3,0.7] and 2 sites for each-branch.
@@ -115,32 +132,32 @@ class DiscModel(object):
         N_neg,N_pos=self.N_neg,self.N_pos
         nband=self.nband
         nz=self.nz
-        zfile='%s/%s.z.dat'%(DATA_FOLDER,token)
-        negfile='%s/%s.neg.dat'%(DATA_FOLDER,token)
-        posfile='%s/%s.pos.dat'%(DATA_FOLDER,token)
+        zfile='%s.z.dat'%(file_prefix)
+        negfile='%s.neg.dat'%(file_prefix)
+        posfile='%s.pos.dat'%(file_prefix)
         if self.is_scalar:
             negdata=concatenate([self.Elist_neg,self.Tlist_neg]).real.reshape([2*N_neg*nz])
             posdata=concatenate([self.Elist_pos,self.Tlist_pos]).real.reshape([2*N_pos*nz])
         else:
-            negdata=concatenate([self.Elist_neg,self.Tlist_neg]).view('float64').reshape([2*N_neg*nz,nband**2*2])
-            posdata=concatenate([self.Elist_pos,self.Tlist_pos]).view('float64').reshape([2*N_pos*nz,nband**2*2])
+            negdata=complex128(concatenate([self.Elist_neg,self.Tlist_neg])).view('float64').reshape([2*N_neg*nz,nband**2*2])
+            posdata=complex128(concatenate([self.Elist_pos,self.Tlist_pos])).view('float64').reshape([2*N_pos*nz,nband**2*2])
         savetxt(negfile,negdata)
         savetxt(posfile,posdata)
         savetxt(zfile,self.z)
 
-def load_discmodel(token):
+def load_discmodel(file_prefix):
     '''
     Load specific data.
 
     Parameters:
-        :token: The target filename token.
+        :file_prefix: The target filename prefix.
 
     Return:
         A <DiscModel> instance.
     '''
-    zfile='%s/%s.z.dat'%(DATA_FOLDER,token)
-    negfile='%s/%s.neg.dat'%(DATA_FOLDER,token)
-    posfile='%s/%s.pos.dat'%(DATA_FOLDER,token)
+    zfile='%s.z.dat'%(file_prefix)
+    negfile='%s.neg.dat'%(file_prefix)
+    posfile='%s.pos.dat'%(file_prefix)
     z=loadtxt(zfile)
     nz=len(z)
     negdata=loadtxt(negfile)
@@ -150,7 +167,7 @@ def load_discmodel(token):
         posdata=posdata.reshape([-1,nz])
     else:
         #the matrix version contains complex numbers.
-        nband=sqrt(negdata.shape[1]/2)
+        nband=sqrt(negdata.shape[1]/2).astype('int32')
         negdata=negdata.view('complex128').reshape([-1,nz,nband,nband])
         posdata=posdata.view('complex128').reshape([-1,nz,nband,nband])
     Elist_neg,Tlist_neg=split(negdata,2)

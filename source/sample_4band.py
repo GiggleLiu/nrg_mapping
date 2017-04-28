@@ -3,14 +3,13 @@ Sample: Speudogap model with r = 1
 '''
 from numpy import *
 from matplotlib.pyplot import *
+from scipy.linalg import eigh
 import time,pdb
 
 from hybri_sc import get_hybri_skew
 from discretization import quick_map,get_wlist,check_disc
 from chainmapper import map2chain,check_spec
-from nrg_setting import PRECISION
 from utils import Gmat,sz
-
 
 def run():
     '''
@@ -23,7 +22,6 @@ def run():
     
     D=[-1.,0.5]             #the energy window.
     wlist=get_wlist(w0=1e-12,Nw=10000,mesh_type='log',Gap=0,D=D)
-    #rhofunc=lambda w:identity(4)+0.3*w*Gmat[0]+0.3*w**2*Gmat[2] #the case with degeneracy
     rhofunc=lambda w:identity(4)+0.3*w*Gmat[0]+0.3*w**2*Gmat[2]+0.1*kron(sz,sz)     #the case without degeneracy.
 
     #create the discretized model
@@ -41,8 +39,8 @@ Lambda    -> %s
     discmodel=quick_map(rhofunc=rhofunc,wlist=wlist,N=N,z=z,Nx=200000,tick_params={'tick_type':tick_type,'Lambda':Lambda},autofix=1e-5)[1]
 
     #map to a chain
-    print 'Start mapping the discrete model to a chain, using precision %s-bit.'%PRECISION
-    chains=map2chain(discmodel,prec=PRECISION)
+    print 'Start mapping the discrete model to a chain.'
+    chains=map2chain(discmodel,nsite=2*N,normalize_method='qr')
     print 'Done'
 
     plot_wlist=wlist[::30]

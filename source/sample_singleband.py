@@ -7,7 +7,6 @@ import time,pdb
 
 from discretization import quick_map,get_wlist,check_disc
 from chainmapper import map2chain,check_spec
-from nrg_setting import PRECISION
 
 
 def run():
@@ -38,8 +37,8 @@ Lambda    -> %s
     discmodel=quick_map(rhofunc=rhofunc,wlist=wlist,N=N,z=z,Nx=200000,tick_params={'tick_type':tick_type,'Lambda':Lambda},autofix=1e-5)[1]
 
     #map to a chain
-    print 'Start mapping the discrete model to a chain, using precision %s-bit.'%PRECISION
-    chains=map2chain(discmodel,prec=PRECISION)
+    print 'Start mapping the discrete model to a chain.'
+    chains=map2chain(discmodel)
     print 'Done'
 
     plot_wlist=wlist[::30]
@@ -58,7 +57,7 @@ Lambda    -> %s
         pdb.set_trace()
 
     dosave=raw_input('Save the chain datas?(y/n):')=='y'
-    if docheck:
+    if dosave:
         for iz,chain in zip(z,chains):
             chain.save('singleband_%s'%iz)
 
