@@ -1,22 +1,20 @@
-#Map a channel mixing bath to a chain
+# Mapping a channel mixing bath to a Wilson chain
 
-This is a versaltile mapping scheme starting from hybridization function,
-it maps a general multi-orbital non-interacting bath with channel mixing to a chain model.
+A versaltile mapping scheme starting from hybridization function,
+mapping a general multi-orbital non-interacting channel mixing bath to a Wilson chain model.
+The motivation is to transform the impurity problems to a real space chain, thus can be solved using NRG and VMPS.
 
-It provides a solution to impurity solvers that requires a concrete physical model(chain Hamiltonian), like NRG/vMPS et. al.
-
-###To use this program
+### To use this program
 Please install the following numerical packages for python(pip install -r requirements.txt)
 
 * numpy
 * scipy
 * matplotlib
-* gmpy2
-* mpi4py(optional)
+* gmpy2(optional)
 
 or *Anaconda* all in one pack: https://store.continuum.io/cshop/anaconda/
 
-###To run the first example.
+### To run an example.
     ```
     $ cd source/
     $ python quickmap.py
@@ -27,21 +25,20 @@ Also, you can specify your own configuration file by `$ python quickmap.py <your
 The input hybridization is specified by a data file('sample_hybridization_func.dat' above),
 it will be interpolated as a continuous function, thus choosing a good omega mesh(like a logarithmic one) is important.
 
-###Documentation
+### Documentation
 * Paper: 
 
         Quantum impurities in channel mixing baths
         Jin-Guo Liu, Da Wang, and Qiang-Hua Wang
         Phys. Rev. B 93, 035102 – Published 4 January 2016
 
-        Its Arxiv version: **doc/1509.01461v2.pdf**, **doc/SupplMater.pdf**
+        Its Arxiv version: doc/1509.01461v2.pdf, doc/SupplMater.pdf
 
-* Technical Details: **doc/technical.pdf**
-* Program documentation: **doc/program_manual.pdf**
+* Technical Details: *doc/technical.pdf*
+* Program documentation: *doc/program_manual.pdf*
 
-###Information
+### Information
 * Author:  Jinguo Leo, NanJing University.
-* Paper:  arXiv:1509.01461
 * Date:  2015/09/07
 * Contact: dg1422033@smail.nju.edu.cn
 
