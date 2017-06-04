@@ -61,3 +61,4 @@ target/
 *.dat
 *.npy
 *deprecated/
+source/__config__.py

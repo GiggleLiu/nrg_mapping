@@ -112,7 +112,6 @@ class MapTest():
             chain2=load_chain(file_prefix)
             assert_allclose(chain2.elist,chain.elist)
             assert_allclose(chain2.tlist,chain.tlist)
-            assert_allclose(chain2.t0,chain.t0)
 
     @dec.slow
     def test_map(self):

@@ -5,7 +5,8 @@ from numpy import *
 from matplotlib.pyplot import *
 import time,pdb
 
-from discretization import quick_map,get_wlist,check_disc
+from discretization import quick_map,check_disc
+from utils import get_wlist
 from chainmapper import map2chain,check_spec
 
 
@@ -24,7 +25,7 @@ def run():
 
     #create the discretized model
     N=33      #the chain length
-    nz=50      #the number of twisting parameter z
+    nz=10      #the number of twisting parameter z
     z=linspace(0.5/nz,1-0.5/nz,nz)
     tick_type='log'
 
@@ -41,18 +42,18 @@ Lambda    -> %s
     chains=map2chain(discmodel)
     print 'Done'
 
-    plot_wlist=wlist[::30]
+    plot_wlist=wlist[::20]
     docheck=raw_input('Check whether this star model recover the hybridization function?(y/n):')=='y'
     if docheck:
         ion()
-        check_disc(rhofunc=rhofunc,wlist=plot_wlist,discmodel=discmodel,smearing=0.2)
+        check_disc(rhofunc=rhofunc,wlist=plot_wlist,discmodel=discmodel,smearing=0.5)
         print 'Press `c` to continue.'
         pdb.set_trace()
 
     docheck=raw_input('Check whether this chain recover the hybridization function?(y/n):')=='y'
     if docheck:
         ion();cla()
-        check_spec(rhofunc=rhofunc,chains=chains,wlist=plot_wlist,smearing=1.,mode='pauli' if nband==2 else 'eval')
+        check_spec(rhofunc=rhofunc,chains=chains,wlist=plot_wlist,smearing=0.5,mode='pauli' if nband==2 else 'eval')
         print 'Press `c` to continue.'
         pdb.set_trace()
 

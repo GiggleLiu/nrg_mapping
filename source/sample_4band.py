@@ -2,14 +2,14 @@
 Sample: Speudogap model with r = 1
 '''
 from numpy import *
-from matplotlib.pyplot import *
+import matplotlib.pyplot as plt
 from scipy.linalg import eigh
 import time,pdb
 
 from hybri_sc import get_hybri_skew
-from discretization import quick_map,get_wlist,check_disc
+from discretization import quick_map,check_disc
 from chainmapper import map2chain,check_spec
-from utils import Gmat,sz
+from utils import Gmat,sz,get_wlist
 
 def run():
     '''
@@ -46,14 +46,14 @@ Lambda    -> %s
     plot_wlist=wlist[::30]
     docheck=raw_input('Check whether this star model recover the hybridization function?(y/n):')=='y'
     if docheck:
-        ion()
+        plt.ion()
         check_disc(rhofunc=rhofunc,wlist=plot_wlist,discmodel=discmodel,smearing=0.7)
         print 'Press `c` to continue.'
         pdb.set_trace()
 
     docheck=raw_input('Check whether this chain recover the hybridization function?(y/n):')=='y'
     if docheck:
-        ion();cla()
+        plt.ion();plt.cla()
         check_spec(rhofunc=rhofunc,chains=chains,wlist=plot_wlist,smearing=0.7,mode='eval')
         print 'Press `c` to continue.'
         pdb.set_trace()

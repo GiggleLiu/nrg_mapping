@@ -6,8 +6,9 @@ from matplotlib.pyplot import *
 import time,pdb
 
 from hybri_sc import get_hybri_skew
-from discretization import quick_map,get_wlist,check_disc
+from discretization import quick_map,check_disc
 from chainmapper import map2chain,check_spec
+from utils import get_wlist
 
 
 def run():

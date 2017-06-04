@@ -6,6 +6,7 @@ checking method is also provided.
 from numpy import *
 from scipy.sparse import block_diag
 from scipy.linalg import eigvalsh,norm,qr
+from scipy.integrate import trapz
 from matplotlib.pyplot import *
 from matplotlib import cm
 import pdb
@@ -13,6 +14,7 @@ import pdb
 from utils import H2G,s2vec
 from tridiagonalize import *
 from chain import Chain
+from lib.futils import hybri_chain
 
 __all__=['map2chain','check_spec','show_scaling']
 
@@ -50,7 +52,7 @@ def map2chain(model,nsite=None,normalize_method='qr'):
         H=block_diag(eml)
         if is_scalar:
             data,offset=tridiagonalize_mp(H,q=qq[:,0],m=nsite)
-            chain=Chain(t0[0,0],data[1],data[2])
+            chain=Chain(asarray(data[1])[:,newaxis,newaxis],append(t0[0],data[2])[:,newaxis,newaxis])
         else:
             if normalize_method=='sqrtm':
                 data,offset=tridiagonalize_sqrtm(H,q=qq.reshape([-1,model.nband]),m=nsite)
@@ -58,7 +60,7 @@ def map2chain(model,nsite=None,normalize_method='qr'):
                 data,offset=tridiagonalize_mpqr(H,q=qq.reshape([-1,model.nband]),m=nsite)
             else:
                 data,offset=tridiagonalize_qr(H,q=qq.reshape([-1,model.nband]),m=nsite)
-            chain=Chain(t0,data[1],data[0])
+            chain=Chain(asarray(data[1]),concatenate([t0[newaxis],data[0]],axis=0))
         cl.append(chain)
     return cl
 
@@ -79,25 +81,9 @@ def check_spec(chains,rhofunc,wlist,mode='eval',smearing=1.):
     nband=chains[0].nband
     nz=len(chains)
     print 'Recovering Spectrum ...'
-    dlv=[]
-    for iz in xrange(nz):
-        print 'Recovering spectrum for %s-th z number.'%iz
-        chain=chains[iz]
-        el=chain.elist
-        tl=concatenate([chain.t0[newaxis,...],chain.tlist],axis=0)
-        dl=[]
-        for w in wlist:
-            sigma=0
-            for e,t in zip(el[::-1],tl[::-1]):
-                geta=abs(w)+1e-10
-                g0=H2G(w=w,h=e+sigma,geta=smearing*geta/nz)
-                tH=transpose(conj(t))
-                sigma=dot(tH,dot(g0,t))
-            dl.append(1j*(sigma-sigma.T.conj())/2./pi)
-        dlv.append(dl)
-    dlv=mean(dlv,axis=0)
-    if chain.is_scalar:
-        dlv=dlv
+    dlv=hybri_chain(tlist=array([chain.tlist for chain in chains]),elist=array([chain.elist for chain in chains]),wlist=wlist,smearing=smearing*1./nz)
+    if chain.nband==1:
+        dlv=dlv[:,0,0]
         nplt=1
     elif nband==2 and mode=='pauli':
         dlv=array([s2vec(d) for d in dlv])
@@ -105,14 +91,15 @@ def check_spec(chains,rhofunc,wlist,mode='eval',smearing=1.):
     else:
         dlv=array([eigvalsh(d) for d in dlv])
         nplt=chain.nband
+    print 'Integrate = %s'%trapz(dlv,wlist,axis=0)
     dlv0=array([rhofunc(w) for w in wlist])
     dlv=dlv.real
-    if chain.is_scalar:
+    if chain.nband==1:
         dlv=dlv[:,newaxis]
     colormap=cm.rainbow(linspace(0,0.8,nplt))
     if mode=='pauli':
         dlv0=array([s2vec(d) for d in dlv0]).real
-    elif chain.is_scalar:
+    elif chain.nband==1:
         dlv0=dlv0[:,newaxis]
     else:
         dlv0=array([eigvalsh(d) for d in dlv0])

@@ -15,6 +15,7 @@ from utils import sx,sy,sz,s2vec,H2G,plot_pauli_components
 from discmodel import DiscModel
 from ticklib import get_ticker
 #from utils import exinterp as interp1d
+from lib.futils import hybri_sun
 
 __all__=['DiscHandler','SingleBandDiscHandler','MultiBandDiscHandler',\
         'quick_map','check_disc']
@@ -207,12 +208,8 @@ def check_disc(rhofunc,discmodel,wlist,smearing=0.02,mode='eval'):
     zlist=discmodel.z
     nz=len(zlist)
     assert(mode=='pauli' or mode=='eval')
-    GL=array([sum([sum([dot(Ti.T.conj(),dot(H2G(Ei,w=w,geta=smearing*1./nz*max(1e-3,abs(w))),Ti))\
-            for Ei,Ti in zip(Elist[:,i],Tlist[:,i])],axis=0) for i in xrange(nz)],axis=0)/nz for w in wlist])
-    if ndim(GL)==1:  #the scalar case.
-        AL=-GL.imag[:,newaxis]/pi
-    else:
-        AL=1j*(GL-transpose(GL,axes=(0,2,1)).conj())/(pi*2.)
+    #calculate GL
+    AL=hybri_sun(tlist=Tlist,elist=Elist,wlist=wlist,smearing=smearing*1./nz)
     odatas=array([rhofunc(w) for w in wlist])
     if mode=='pauli':
         if nband!=2:

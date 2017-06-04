@@ -149,7 +149,7 @@ def exinterp(xlist,ylist):
 
 def get_wlist(w0,Nw,mesh_type,D=1,Gap=0):
     '''
-    A well defined mesh can make the rho(w) more accurate.
+    A log mesh can make low energy component of rho(w) more accurate.
 
     Parameters:
         :w0: float, The starting w for wlist for `log` and `sclog` type wlist, it must be smaller than lowest energy scale!

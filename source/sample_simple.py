@@ -1,7 +1,8 @@
 from numpy import *
-from discretization import quick_map,get_wlist,check_disc
+from discretization import quick_map,check_disc
 from chainmapper import map2chain,check_spec
 from matplotlib import pyplot as plt
+from utils import get_wlist
 
 sx=array([[0,1],[1,0]])
 sy=array([[0,-1j],[1j,0]])
