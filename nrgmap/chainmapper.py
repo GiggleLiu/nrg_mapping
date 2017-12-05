@@ -50,7 +50,7 @@ def map2chain(model,nsite=None,normalize_method='qr'):
         eml=Elist[:,i]
         #multi-band lanczos,
         H=block_diag(eml)
-        if is_scalar:
+        if is_scalar and normalize_method=='mpqr':
             data,offset=tridiagonalize_mp(H,q=qq[:,0],m=nsite)
             chain=Chain(asarray(data[1])[:,newaxis,newaxis],append(t0[0],data[2])[:,newaxis,newaxis])
         else:
