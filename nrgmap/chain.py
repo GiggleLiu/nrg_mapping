@@ -5,7 +5,7 @@ from numpy import *
 from scipy import sparse as sps
 import warnings
 
-from tridiagonalize import construct_tridmat
+from .tridiagonalize import construct_tridmat
 
 __all__=['Chain','load_chain']
 

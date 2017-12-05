@@ -25,7 +25,7 @@ def mpqr(A):
     ndim=A.shape[1]
     Q=zeros([A.shape[0],0])
     csqrt=vectorize(gmpy2.sqrt)
-    for i in xrange(ndim):
+    for i in range(ndim):
         ui=A[:,i:i+1]
         if i>0:
             ui=ui-dot(Q,dot(mpconj(Q.T),ui))

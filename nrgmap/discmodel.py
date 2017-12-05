@@ -95,7 +95,7 @@ class DiscModel(object):
 
         #fill datas
         mat[0,0]=e0
-        for i in xrange(1,N):
+        for i in range(1,N):
             ti=tlist[i-1]
             mat[i,i]=elist[i-1]
             mat[0,i]=ti.T.conj()

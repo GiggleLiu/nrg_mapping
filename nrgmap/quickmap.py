@@ -3,13 +3,13 @@ Quick map from hybridization function to chain..
 '''
 
 from numpy import *
-
-from discretization import quick_map
-from chainmapper import map2chain
 from scipy.interpolate import interp1d
 from configobj import ConfigObj
 from validate import Validator
 import sys,pdb,os
+
+from .discretization import quick_map
+from .chainmapper import map2chain
 
 __all__=['quickmap','run_config']
 
@@ -32,11 +32,11 @@ def quickmap(wlist,rhofunc,Lambda=2.0,nsite=25,nz=1,tick_type='adaptive'):
         z=1.
     else:
         z=linspace(0.5/nz,1-0.5/nz,nz)
-    print 'Start mapping the hybridization function to sun model.'
+    print('Start mapping the hybridization function to sun model.')
     discmodel=quick_map(rhofunc=rhofunc,wlist=wlist,N=nsite,z=z,Nx=200000,tick_params={'tick_type':tick_type,'Lambda':Lambda},autofix=1e-5)[1]
-    print 'Start mapping the sun model to a Wilson chain.'
+    print('Start mapping the sun model to a Wilson chain.')
     chains=map2chain(discmodel,nsite=nsite,normalize_method='qr')
-    print 'Done'
+    print('Done')
     return chains
 
 def run_config(config_file):
@@ -84,13 +84,13 @@ def run_config(config_file):
     for z,chain in zip(zs,chains):
         chain.save(file_prefix=file_prefix+'_%s'%z)
 
-    print '''%s
+    print('''%s
 Mapping complete!
 > Data for Wilson chains are stored in files `%s_[%s].[el,tl,info].dat`.
 > To use them in python, check @chain.load_chain.
 > To use them in other programming language,
   please read the description in method @chain.Chain.save.
-%s'''%('='*40,file_prefix,','.join([str(z) for z in zs]),'='*40)
+%s'''%('='*40,file_prefix,','.join([str(z) for z in zs]),'='*40))
 
 
 def _load_hybri(hybri_file,is_complex):

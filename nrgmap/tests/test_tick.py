@@ -8,10 +8,9 @@ from matplotlib.pyplot import *
 from scipy import sparse as sps
 from scipy.linalg import qr,eigvalsh,norm
 import time,pdb,sys
-sys.path.insert(0,'../')
 
-from ticklib import *
-from discretization import *
+from ..ticklib import *
+from ..discretization import *
 
 
 def random_function(k=5):
@@ -48,7 +47,7 @@ def test_tick():
         ticker_=get_ticker(tick_type,D=-wlist[0],N=N,Lambda=Lambda,Gap=0,wlist=-wlist[~pmask][::-1],rholist=rholist[~pmask][::-1])
         plt=scatter(-ticker_(arange(2,2+N+1)),offset_y*ones(N+1),edgecolor='none',color=colors[i],label=tick_type)
         #consistancy check
-        assert_allclose(ticker(arange(1,N+2)),[ticker(i) for i in xrange(1,N+2)])
+        assert_allclose(ticker(arange(1,N+2)),[ticker(i) for i in range(1,N+2)])
     legend(plts,tick_types,loc=2)
     plot(wlist,rholist)
     pdb.set_trace()

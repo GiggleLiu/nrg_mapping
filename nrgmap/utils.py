@@ -44,7 +44,7 @@ def vec2s(n):
     '''
     if len(n)<=3:
         res=zeros([2,2],dtype='complex128')
-        for i in xrange(len(n)):
+        for i in range(len(n)):
             res+=s[i+1]*n[i]
         return res
     elif len(n)==4:
@@ -105,7 +105,7 @@ def plot_pauli_components(x,y,method='plot',ax=None,label=r'\sigma',**kwargs):
     yv=array([s2vec(yi) for yi in y]).real
     colormap=cm.rainbow(linspace(0,0.8,4))
     plts=[]
-    for i in xrange(4):
+    for i in range(4):
         if method=='plot':
             plts+=plot(x,yv[:,i],color=colormap[i],**kwargs)
         else:

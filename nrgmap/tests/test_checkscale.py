@@ -8,13 +8,12 @@ from matplotlib.pyplot import *
 from scipy import sparse as sps
 from scipy.linalg import qr,eigvalsh,norm
 import time,pdb,sys
-sys.path.insert(0,'../')
 
-from utils import *
-from discretization import get_wlist,quick_map
-from chain import *
-from hybri_sc import *
-from chainmapper import *
+from ..utils import *
+from ..discretization import get_wlist,quick_map
+from ..chain import *
+from ..hybri_sc import *
+from ..chainmapper import *
 
 def get_chain(z=0.5,method='qr'):
     '''
@@ -63,7 +62,7 @@ def get_chain_sc(z=0.5,method='qr'):
     return chains[0]
 
 def test_checkscale():
-    print 'Test Scaling of random 4 band model.'
+    print('Test Scaling of random 4 band model.')
     ion()
     methods=['qr','mpqr','sqrtm']
     for method in methods:
@@ -73,7 +72,7 @@ def test_checkscale():
     pdb.set_trace()
 
 def test_checkscale_sc():
-    print 'Test Scaling of chain, superconducting, the offdiagonal part do not obey scaling.'
+    print('Test Scaling of chain, superconducting, the offdiagonal part do not obey scaling.')
     ion()
     methods=['qr','mpqr','sqrtm']
     for method in methods:

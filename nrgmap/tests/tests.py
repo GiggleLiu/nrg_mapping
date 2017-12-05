@@ -8,16 +8,15 @@ from matplotlib.pyplot import *
 from scipy import sparse as sps
 from scipy.linalg import qr,eigvalsh,norm
 import time,pdb,sys
-sys.path.insert(0,'../')
 
-from hybri_sc import *
-from discretization import *
-from utils import *
-from ticklib import *
-from chainmapper import *
-from discmodel import *
-from chain import *
-from tridiagonalize import tridiagonalize_qr,tridiagonalize,tridiagonalize_sqrtm,construct_tridmat
+from ..hybri_sc import *
+from ..discretization import *
+from ..utils import *
+from ..ticklib import *
+from ..chainmapper import *
+from ..discmodel import *
+from ..chain import *
+from ..tridiagonalize import tridiagonalize_qr,tridiagonalize,tridiagonalize_sqrtm,construct_tridmat
 
 def test_get_wlist():
     '''test for get_wlist'''
@@ -26,7 +25,7 @@ def test_get_wlist():
     w0=1e-8
     Nw=500
     for mesh_type in ['log','sclog','linear']:
-        print 'Testing for %s wlist.'%mesh_type
+        print('Testing for %s wlist.'%mesh_type)
         wlist=get_wlist(w0,Nw,mesh_type,D=D,Gap=Gap)
         assert_(all(diff(wlist)>0))
         assert_almost_equal(wlist[0],D[0])
@@ -50,7 +49,7 @@ def test_hybri_sc():
     fig=figure(figsize=(4,9))
     dls=[array([df(w) for w in wlist]) for df in dfuncs]
     titles=['normal','wideband','skew']
-    for i in xrange(3):
+    for i in range(3):
         subplot('31%s'%(i+1))
         title(titles[i])
         plot_pauli_components(wlist,dls[i],lw=2)
@@ -119,9 +118,9 @@ class MapTest():
         plot_wlist=self.wlist[::50]
         if self.nband==2:
             check_disc(rhofunc=self.rhofunc,wlist=plot_wlist,discmodel=self.discmodel,smearing=1,mode='pauli')
-            print '***The superconducting model needs some special gradients to cope the smearing factor here,\
+            print('***The superconducting model needs some special gradients to cope the smearing factor here,\
                     \nwhich is not included for general purpose,\
-                    \nso, don\'t be disappointed by the poor match here, they are artifacts.***'
+                    \nso, don\'t be disappointed by the poor match here, they are artifacts.***')
             ylim(-0.1,0.2)
         elif self.nband==1 or self.nband==4:
             check_disc(rhofunc=self.rhofunc,wlist=plot_wlist,discmodel=self.discmodel,smearing=0.2 if self.nband==1 else 0.4)
@@ -152,7 +151,7 @@ def test_all():
         t0=time.time()
         ti=MapTest(i)
         t1=time.time()
-        print 'Elapse, %s'%(t1-t0)
+        print('Elapse, %s'%(t1-t0))
         ti.test_saveload()
         ti.test_map()
         ti.test_chain()

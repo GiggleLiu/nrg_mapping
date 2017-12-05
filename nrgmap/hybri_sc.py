@@ -4,7 +4,8 @@ wide-band approximation(get_hybri_wideband) version and finite-band width(get_hy
 '''
 
 from numpy import *
-from utils import sx,sz
+
+from .utils import sx,sz
 
 __all__=['get_hybri','get_hybri_wideband','get_hybri_skew']
 

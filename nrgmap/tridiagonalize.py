@@ -28,7 +28,7 @@ def icgs(u,Q,M=None,return_norm=False,maxiter=3):
     it=1
     Mu=M.dot(u) if M is not None else u
     r_pre=norm(uH.dot(Mu))
-    for it in xrange(maxiter):
+    for it in range(maxiter):
         u=u-Q.dot(QH.dot(Mu))
         Mu=M.dot(u) if M is not None else u
         r1=norm(uH.dot(Mu))
@@ -153,7 +153,7 @@ def tridiagonalize_sqrtm(A,q,m=None,getbasis=False):
         Q_i=icgs(z,Q)
         Q=append(Q,Q_i,axis=-1)
         if sum(abs(bi))<1e-20:
-            print 'Warning! bad krylov space!'
+            print('Warning! bad krylov space!')
 
     Bl=array(beta[:m-1])
     if q.shape[0]/n==1:
@@ -212,7 +212,7 @@ def tridiagonalize_qr(A,q,m=None):
         Q_i=icgs(Q_i,Ql[:,n:],return_norm=False)
         Ql=concatenate([Ql,Q_i],axis=1)
         if i!=m-1 and sum(abs(B_i))<1e-20:
-            print 'Warning! bad krylov space!'
+            print('Warning! bad krylov space!')
 
     Bl=array(Bl[1:m])
     if q.shape[0]/n==1:
@@ -242,9 +242,9 @@ def construct_tridmat(data,offset):
     N=n*p
     B=ndarray([n,n],dtype='O')
     #fill datas
-    for i in xrange(n):
-        for j in xrange(n):
-            for k in xrange(3):
+    for i in range(n):
+        for j in range(n):
+            for k in range(3):
                 if j-i==offset[k]:
                     B[i,j]=complex128(data[offset[k]+1][min(i,j)])
     B=sps.bmat(B)
@@ -273,7 +273,7 @@ def tridiagonalize_mp(A, q, m=None,prec=5000,getbasis=False):
     **Note:** The initial vector q will be renormalized to guarant the correctness of result,
     """
     import gmpy2
-    from mplib import mpqr,mpconj
+    from .mplib import mpqr,mpconj
     gmpy2.get_context().precision=prec
     lin={'conj':mpconj,'tocomplex':vectorize(gmpy2.mpc),'sqrt':vectorize(gmpy2.sqrt)}
     if sps.issparse(A): A=A.toarray()
@@ -337,7 +337,7 @@ def tridiagonalize_mpqr(A,q,m=None,prec=5000):
     """
     #setup environment
     import gmpy2
-    from mplib import mpqr,mpconj
+    from .mplib import mpqr,mpconj
     gmpy2.get_context().precision=prec
     lin={'conj':mpconj,'qr':mpqr,'tocomplex':vectorize(gmpy2.mpc)}
 
@@ -365,7 +365,7 @@ def tridiagonalize_mpqr(A,q,m=None,prec=5000):
         Bl.append(B_i)
         Ql.append(Q_i)
         if i!=m-1 and sum(abs(B_i))<1e-20:
-            print 'Warning! bad krylov space!'
+            print('Warning! bad krylov space!')
 
     Bl=array(Bl[1:m])
     if q.shape[0]/n==1:

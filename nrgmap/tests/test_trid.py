@@ -8,12 +8,11 @@ from matplotlib.pyplot import *
 from scipy import sparse as sps
 from scipy.linalg import qr,eigvalsh,norm
 import time,pdb,sys
-sys.path.insert(0,'../')
 
-from hybri_sc import *
-from discretization import *
-from utils import *
-from tridiagonalize import *
+from ..hybri_sc import *
+from ..discretization import *
+from ..utils import *
+from ..tridiagonalize import *
 
 class TridTest(object):
     '''test tridiagonalization.'''
@@ -78,7 +77,7 @@ class TridTest(object):
             for p in pl:
                 for matrix_type in matrix_types:
                     for method in ['qr','sqrtm','mpqr']:
-                        print 'Testing n=%s,p=%s,matrix_type=%s,method=%s'%(n,p,matrix_type,method)
+                        print('Testing n=%s,p=%s,matrix_type=%s,method=%s'%(n,p,matrix_type,method))
                         self.test1(n=n,p=p,matrix_type=matrix_type,method=method)
 
 if __name__=='__main__':

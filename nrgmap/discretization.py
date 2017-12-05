@@ -11,11 +11,10 @@ from scipy.integrate import quadrature,cumtrapz,trapz,simps,quad
 from numpy.linalg import eigh,inv,eigvalsh,norm
 import pdb,time,warnings
 
-from utils import sx,sy,sz,s2vec,H2G,plot_pauli_components
-from discmodel import DiscModel
-from ticklib import get_ticker
-#from utils import exinterp as interp1d
-from lib.futils import hybri_sun
+from .utils import sx,sy,sz,s2vec,H2G,plot_pauli_components
+from .discmodel import DiscModel
+from .ticklib import get_ticker
+from .lib.futils import hybri_sun
 
 __all__=['DiscHandler','SingleBandDiscHandler','MultiBandDiscHandler',\
         'quick_map','check_disc']
@@ -131,11 +130,10 @@ class MultiBandDiscHandler(DiscHandler):
         rhoeval_list=array([eigvalsh(rho) for rho in self.rholist])
 
         if any(array(rhoeval_list)<0):
-            for i in xrange(2):
+            for i in range(2):
                 rl=rhoeval_list[i]
-                print rhoeval_list[i].min()
                 if rl.min()>autofix:
-                    print 'Fixing minus eigenvalue of rho(w) caused by numerical error!'
+                    print('Fixing minus eigenvalue of rho(w) caused by numerical error!')
                     rl[rl<1e-20]=1e-20
                 else:
                     raise Exception('Negative eigenvalue of rho(w) found! check your hybridization function!')
@@ -143,7 +141,7 @@ class MultiBandDiscHandler(DiscHandler):
         assert(ndim(self.rholist)>1)
         nband=self.nband
         self.single_band_handlers=[]
-        for i in xrange(self.nband):
+        for i in range(self.nband):
             self.single_band_handlers.append(SingleBandDiscHandler(wlist,rhoeval_list[:,i],tickers=self.tickers))
 
     @property
@@ -164,19 +162,19 @@ class MultiBandDiscHandler(DiscHandler):
         '''
         nband=self.nband
         tfuncs,efuncs=[],[]
-        for i in xrange(nband):
+        for i in range(nband):
             tf,ef=self.single_band_handlers[i].get_TEfunc(sgn=sgn,xmax=xmax,Nx=Nx)
             tfuncs.append(tf)
             efuncs.append(ef)
 
         #get Efunc
-        Efunc=lambda x:diag([efuncs[i](x) for i in xrange(nband)])
+        Efunc=lambda x:diag([efuncs[i](x) for i in range(nband)])
 
         #get Tfunc
         def Tfunc(x):
             Ul=[]
             ei_old=Inf
-            for i in xrange(self.nband):
+            for i in range(self.nband):
                 ei=efuncs[i](x)
                 #The degeneracy must be handled,
                 #Checking degeneracy is a critical step to ensure the correctness.
@@ -185,7 +183,7 @@ class MultiBandDiscHandler(DiscHandler):
                     ei_old=ei
                 Ul.append(Ui[:,i:i+1])
             Ux=concatenate(Ul,axis=1)
-            Td=concatenate([tfuncs[i](x)*Ux[:,i:i+1] for i in xrange(self.nband)],axis=1)
+            Td=concatenate([tfuncs[i](x)*Ux[:,i:i+1] for i in range(self.nband)],axis=1)
             T=Td.conj().T
             return T
         return Tfunc,Efunc
@@ -200,7 +198,7 @@ def check_disc(rhofunc,discmodel,wlist,smearing=0.02,mode='eval'):
         :wlist: 1D array, the frenquncy space.
         :smearing: float, smearing constant.
     '''
-    print 'Start checking the mapping of discretized model!'
+    print('Start checking the mapping of discretized model!')
     t0=time.time()
     nband=discmodel.nband
     N=discmodel.N_pos
@@ -221,14 +219,14 @@ def check_disc(rhofunc,discmodel,wlist,smearing=0.02,mode='eval'):
         odatas=array([eigvalsh(o) for o in odatas]) if nband>1 else odatas.reshape(AL.shape[:2])
         colormap=cm.rainbow(linspace(0,0.8,4))
         plts=[]
-        for i in xrange(nband):
+        for i in range(nband):
             plts+=plot(wlist,odatas[:,i],lw=3,color=colormap[i])
-        for i in xrange(nband):
+        for i in range(nband):
             sct=scatter(wlist,AV[:,i],s=30,edgecolors=colormap[i],facecolors='none')
             plts.append(sct)
-        legend(plts,[r'$\rho_%s$'%i for i in xrange(nband)]+[r"$\rho'_%s$"%i for i in xrange(nband)],ncol=2)
+        legend(plts,[r'$\rho_%s$'%i for i in range(nband)]+[r"$\rho'_%s$"%i for i in range(nband)],ncol=2)
     xlabel('$\\omega$',fontsize=16)
-    print 'Time Elapsed: %s s'%(time.time()-t0)
+    print('Time Elapsed: %s s'%(time.time()-t0))
 
 def quick_map(rhofunc,wlist,N,z=1.,Nx=500000,tick_params=None,autofix=1e-5):
     '''
@@ -283,7 +281,7 @@ def quick_map(rhofunc,wlist,N,z=1.,Nx=500000,tick_params=None,autofix=1e-5):
     weights=[weights[~pmask][::-1],weights[pmask]]
 
     t0=time.time()
-    print 'Start discretization. Using %s discretization points(ticks).'%tick_type
+    print('Start discretization. Using %s discretization points(ticks).'%tick_type)
     tickers=[get_ticker(tick_type,r=r,Lambda=Lambda,D=abs(D[sgn]),Gap=abs(Gap[sgn]),\
             wlist=wlists[sgn],rholist=weights[sgn]) for sgn in branches]
 
@@ -296,12 +294,12 @@ supposed to be smaller than %s.'%min(tickers[1](N+1),tickers[0](N+1)))
         handler=SingleBandDiscHandler(wlist=wlist,rholist=rholist,tickers=tickers)
     else:
         handler=MultiBandDiscHandler(rhofunc=rhofunc,wlist=wlist,tickers=tickers,autofix=autofix)
-    print 'Getting functions of representative energies and hoppings.'
+    print('Getting functions of representative energies and hoppings.')
     funcs=[handler.get_TEfunc(sgn=sgn,Nx=Nx,xmax=N+2) for sgn in branches]
-    print 'Time Elapsed: %s s'%(time.time()-t0)
-    print 'Done.'
+    print('Time Elapsed: %s s'%(time.time()-t0))
+    print('Done.')
 
-    print 'Generating discrete model ...'
+    print('Generating discrete model ...')
     if ndim(z)==0:
         z=array([z])
     nz=len(z)
@@ -309,7 +307,7 @@ supposed to be smaller than %s.'%min(tickers[1](N+1),tickers[0](N+1)))
     ticks=array([arange(1+iz,N+1+iz-0.1) for iz in z]).T
     Tlists=[array([[funcs[sgn][0](x) for x in xi] for xi in ticks]) for sgn in branches]
     Elists=[array([[funcs[sgn][1](x) for x in xi] for xi in ticks]) for sgn in branches]
-    print 'Done.'
+    print('Done.')
     model=DiscModel(Elists,Tlists,z)
     return tickers,model
 
